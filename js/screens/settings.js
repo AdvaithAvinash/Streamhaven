@@ -152,7 +152,7 @@
     ]; }],
     ['about', 'About Streamhaven', function () { return [
       info('Version', SH.version), info('Platform', platform()), info('Playback engine', SH.Engine.engineName()), info('Screen', window.screen.width + ' × ' + window.screen.height),
-      info('Integrations in this build', 'M3U playlists, direct stream URLs'), info('Planned', 'Xtream Codes, Stalker, Jellyfin, Plex, Emby, catch-up, QR setup')
+      info('Source types', 'M3U, Xtream Codes, Stalker, Jellyfin, Emby, Plex, XMLTV, direct URL'), info('Not yet available', 'QR companion setup')
     ]; }]
   ];
   var redraw = function () {};

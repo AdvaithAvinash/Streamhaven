@@ -6,7 +6,7 @@
     37: 'left', 38: 'up', 39: 'right', 40: 'down', 13: 'enter',
     10009: 'back', 27: 'back', 8: 'back',
     10252: 'playpause', 415: 'play', 19: 'pause', 413: 'stop', 412: 'rw', 417: 'ff',
-    427: 'chup', 428: 'chdown', 33: 'chup', 34: 'chdown',
+    427: 'chup', 428: 'chdown', 33: 'chup', 34: 'chdown', 179: 'playpause', 178: 'stop', 176: 'ff', 177: 'rw',
     403: 'red', 404: 'green', 405: 'yellow', 406: 'blue',
     457: 'info', 458: 'guide', 10073: 'chlist', 10182: 'exit'
   };

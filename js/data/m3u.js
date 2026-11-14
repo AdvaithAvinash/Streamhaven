@@ -17,7 +17,7 @@
       return 'Unknown';
     },
     parse: function (text) {
-      var out = { channels: [], movies: [], series: [], epg: {}, epgUrl: '' };
+      var out = { channels: [], movies: [], series: [], epgUrl: '' };
       var lines = String(text).split(/\r?\n/), info = null, grp = '', seriesMap = {}, now = Date.now();
       if (!/#EXTM3U|#EXTINF/i.test(text.slice(0, 4096))) throw new Error('This does not look like an M3U playlist');
       for (var i = 0; i < lines.length; i++) {

@@ -1,7 +1,7 @@
 /* Streamhaven core utilities. ES5 only: must run on Tizen 3.0 (Chromium 47). */
 (function () {
   'use strict';
-  var SH = window.SH = { version: '0.1.0', scale: 1 };
+  var SH = window.SH = { version: '0.2.0', scale: 1 };
 
   /* ---- DOM builder: h('div.card.f', {text:'x', _enter:fn}, [children]) ---- */
   SH.h = function (spec, props, kids) {
@@ -68,19 +68,75 @@
     size: function (prefix) { var n = 0, ks = SH.ls.keys(prefix); for (var i = 0; i < ks.length; i++) { try { n += (localStorage.getItem(ks[i]) || '').length; } catch (e) {} } return n; }
   };
 
-  /* ---- HTTP GET ---- */
+  /* ---- HTTP ----
+   * SH.http(url, {method, headers, body, timeout, binary, json}, cb(err, result, info))
+   * Uses the native bridge (Android) when present: no CORS and full header control.
+   * Otherwise XMLHttpRequest, where browsers silently drop forbidden headers (Cookie, User-Agent). */
+  var nativeSeq = 0, nativePending = {};
+  window.__shNative = function (id, status, body, b64) {
+    var p = nativePending[id]; if (!p) return; delete nativePending[id]; clearTimeout(p.timer);
+    /* the Android bridge announces completion and lets the page pull the (possibly huge) body itself */
+    if ((body === null || body === undefined) && window.SHNative && window.SHNative.take) { body = window.SHNative.take(id); b64 = !!window.SHNative.wasBinary(id); }
+    p.done(status, body, b64);
+  };
+  function b64ToBytes(b64) { var bin = atob(b64), n = bin.length, u = new Uint8Array(n); for (var i = 0; i < n; i++) u[i] = bin.charCodeAt(i); return u; }
+  function httpError(status) {
+    if (status === 401 || status === 403) return 'Access was refused. Check your login details';
+    if (status === 404) return 'The address was not found on the server';
+    return 'Server returned ' + status;
+  }
+  SH.hasNativeHttp = function () { return !!window.SHNative; };
   SH.http = function (url, opts, cb) {
-    var x = new XMLHttpRequest(), done = false;
-    function fin(err, res) { if (done) return; done = true; cb(err, res, x); }
+    if (typeof opts === 'function') { cb = opts; opts = {}; }
+    opts = opts || {};
+    var done = false, method = opts.method || 'GET', timeout = opts.timeout || 30000;
+    function fin(err, res, info) {
+      if (done) return; done = true;
+      if (!err && opts.json) { try { res = JSON.parse(res); } catch (e) { err = 'The server sent an unexpected response'; } }
+      cb(err, res, info);
+    }
+    function finStatus(status, res) { if (status >= 200 && status < 400) fin(null, res, { status: status }); else fin(httpError(status), null, { status: status }); }
+    if (window.SHNative) {
+      var id = ++nativeSeq, p = nativePending[id] = {};
+      p.timer = setTimeout(function () { delete nativePending[id]; fin('The server took too long to respond'); }, timeout + 3000);
+      p.done = function (status, body, b64) {
+        if (status <= 0) return fin(body || 'Could not reach the server');
+        finStatus(status, opts.binary ? (b64 ? b64ToBytes(body) : new Uint8Array(0)) : body);
+      };
+      try { window.SHNative.request(id, method, url, JSON.stringify(opts.headers || {}), opts.body || '', timeout, !!opts.binary); }
+      catch (e) { delete nativePending[id]; fin('Could not reach the server'); }
+      return { abort: function () { delete nativePending[id]; done = true; } };
+    }
+    var x = new XMLHttpRequest();
     try {
-      x.open('GET', url, true);
-      x.timeout = (opts && opts.timeout) || 30000;
-      x.onload = function () { if (x.status >= 200 && x.status < 400) fin(null, x.responseText); else fin('Server returned ' + x.status); };
+      x.open(method, url, true);
+      x.timeout = timeout;
+      if (opts.binary) x.responseType = 'arraybuffer';
+      var hd = opts.headers || {};
+      for (var k in hd) if (hd.hasOwnProperty(k) && hd[k] !== undefined) { try { x.setRequestHeader(k, hd[k]); } catch (e1) {} }
+      x.onload = function () { finStatus(x.status, opts.binary ? new Uint8Array(x.response) : x.responseText); };
       x.onerror = function () { fin('Could not reach the server'); };
       x.ontimeout = function () { fin('The server took too long to respond'); };
-      x.send();
-    } catch (e) { fin('The address is not valid'); }
+      x.send(opts.body || null);
+    } catch (e2) { fin('The address is not valid'); }
     return x;
+  };
+  SH.getJson = function (url, opts, cb) { opts = SH.assign({}, opts, { json: true }); return SH.http(url, opts, cb); };
+  SH.bytesToText = function (u8) {
+    if (window.TextDecoder) { try { return new TextDecoder('utf-8').decode(u8); } catch (e) {} }
+    var out = '', CH = 8192;
+    for (var i = 0; i < u8.length; i += CH) out += String.fromCharCode.apply(null, u8.subarray(i, i + CH));
+    try { return decodeURIComponent(escape(out)); } catch (e2) { return out; }
+  };
+  var loaded = {};
+  SH.loadScript = function (src, cb) {
+    if (loaded[src] === true) return cb(null);
+    if (loaded[src]) return loaded[src].push(cb);
+    loaded[src] = [cb];
+    var s = document.createElement('script'); s.src = src;
+    s.onload = function () { var l = loaded[src]; loaded[src] = true; l.forEach(function (f) { f(null); }); };
+    s.onerror = function () { var l = loaded[src]; delete loaded[src]; l.forEach(function (f) { f('Could not load ' + src); }); };
+    document.head.appendChild(s);
   };
 
   /* ---- Formatting ---- */

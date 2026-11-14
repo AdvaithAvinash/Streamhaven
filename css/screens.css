@@ -87,6 +87,7 @@ body.video-on .video-hole { box-shadow: 0 0 0 4000px #080D17; }
 .detail-text .btn-row { margin: 26px 0 24px; }
 .detail-episodes { margin-bottom: 30px; }
 .detail-episodes .chip-row { padding: 14px 0 4px 4px; }
+.ep-note { padding: 14px 8px; color: #929EB0; font-size: 22px; }
 .ep-list { width: 1500px; padding-left: 4px; }
 .ep-row { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; min-height: 92px; padding: 14px 24px; margin-bottom: 8px; border-radius: 12px; background: #101827; }
 .ep-row.is-focused { background: #1E2C44; }
@@ -177,3 +178,7 @@ body.video-on .video-hole { box-shadow: 0 0 0 4000px #080D17; }
 .p-main.vod .p-info { margin: 0 0 18px; }
 .p-seek { padding: 10px 8px; border-radius: 10px; }
 .p-times { display: -webkit-flex; display: flex; -webkit-justify-content: space-between; justify-content: space-between; padding: 6px 8px 18px; color: #C9D1DE; font-size: 20px; }
+.sc-info { margin-left: 14px; }
+.sc-guide { margin: -8px 0 18px; color: #929EB0; font-size: 19px; }
+.sc-guide.err { color: #F2B84B; }
+.menu.scroll { overflow: visible; }

@@ -114,6 +114,8 @@
         for (var se = 1; se <= 2; se++) for (var e = 1; e <= 6; e++) eps.push({ season: se, number: e, title: EP_TITLES[Math.floor(rs() * EP_TITLES.length)], plot: DESC[Math.floor(rs() * DESC.length)], duration: (38 + Math.floor(rs() * 20)) * 60, url: STREAM + '?s=' + i + '&e=' + se + '.' + e });
         out.series.push({ title: s[0], year: s[1], genres: s[2].split(','), rating: s[3], plot: s[4], poster: art(s[0], 300, 450), backdrop: art(s[0] + 'bg', 960, 540), episodes: eps, added: now - i * 864e5 * 3 - 864e5 });
       }
+      var n2 = 0; for (var k in out.epg) n2 += out.epg[k].length;
+      out.epg = { byId: out.epg, names: {}, count: n2 };
       return out;
     }
   };

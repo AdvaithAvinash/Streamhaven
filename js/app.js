@@ -21,7 +21,10 @@
     if (s.focus && s.focus() !== false && !SH.Sidebar.has(F.current)) return;
     F.first(s.el);
   };
-  App.exit = function () { try { tizen.application.getCurrentApplication().exit(); } catch (e) { UI.toast('Exit is only available on the TV'); } };
+  App.exit = function () {
+    if (window.SHNative && window.SHNative.exit) return window.SHNative.exit();
+    try { tizen.application.getCurrentApplication().exit(); } catch (e) { UI.toast('Exit is only available on the TV'); }
+  };
   App.back = function () {
     var d = UI.topDialog(); if (d) { d.close(); return; }
     var s = R.current;
@@ -52,6 +55,7 @@
   /* ---- shared actions ---- */
   App.playTitle = function (item) {
     var t = item;
+    if (item.kind === 'series' && !item.seasons.length) { R.push('detail', { id: item.id }); return; }
     if (item.kind === 'series') {
       t = item.seasons[0] && item.seasons[0].episodes[0];
       var hist = SH.Store.data().history;
@@ -63,12 +67,18 @@
     var now = Date.now(), live = !p || (p.s <= now && p.e > now), future = p && p.s > now, buttons = [{ label: 'Close' }];
     if (future) { var has = SH.Store.hasReminder(ch.id, p.s); buttons.push({ label: has ? 'Remove reminder' : 'Set reminder', primary: true, run: function () { UI.toast(SH.Store.toggleReminder(ch, p) ? 'Reminder set for ' + SH.fmt.time(p.s) : 'Reminder removed'); } }); }
     if (live && !inPlayer) buttons.push({ label: 'Watch ' + ch.name, primary: true, run: function () { R.push('player', { item: ch }); } });
+    var cu = p && p.e <= now ? C.catchupFor(ch, p) : null;
+    if (cu) buttons.push({ label: 'Watch from the start', primary: true, run: function () {
+      var item = { id: 'cu:' + ch.id + ':' + p.s, kind: 'catchup', title: p.t, channel: ch.name, streams: [{ sourceId: cu.sourceId, url: cu.url }] };
+      if (inPlayer && R.current && R.current.name === 'player') R.back();
+      R.push('player', { item: item });
+    } });
     if (p && p.e <= now && !inPlayer) buttons.push({ label: 'Watch ' + ch.name + ' live', run: function () { R.push('player', { item: ch }); } });
     UI.dialog({
       title: p ? p.t : ch.name, wide: true,
       body: [h('div.meta', [p ? h('span', { text: SH.fmt.day(p.s) + ' · ' + SH.fmt.range(p.s, p.e) }) : null, h('span', { text: ch.name }), p && p.c ? h('span', { text: p.c }) : null, p && live ? UI.live() : null]),
         h('p.dialog-text', { text: p ? (p.d || 'No description available.') : 'No programme information is available for this channel.' }),
-        p && p.e <= now ? h('p.dialog-note', { text: 'This programme has ended. Catch-up is not available from this source.' }) : null],
+        p && p.e <= now && !cu ? h('p.dialog-note', { text: 'This programme has ended. ' + (C.hasCatchup(ch) ? 'It is outside this channel\'s catch-up window.' : 'Catch-up is not offered for this channel.') }) : null],
       buttons: buttons
     });
   };

@@ -31,8 +31,9 @@
     l.style.left = r.x + 'px'; l.style.top = r.y + 'px'; l.style.width = r.w + 'px'; l.style.height = r.h + 'px';
     if (backend && backend.rect) backend.rect(r);
   }
+  function tracked() { return !!E.item && E.item.kind !== 'catchup'; }
   function saveProgress(force) {
-    if (!E.item || E.isLive() || !started) return;
+    if (!E.item || E.isLive() || !started || !tracked()) return;
     var now = Date.now(); if (!force && now - lastSave < 10000) return; lastSave = now;
     var pos = E.position(), dur = E.duration();
     if (pos > 5) SH.Store.setProgress(E.item, pos, dur);
@@ -43,7 +44,7 @@
     if (backend) { try { backend.close(); } catch (e) {} backend = null; }
   }
   function fail(reason) {
-    var url = E.url(); if (url) SH.Health.fail(url, reason);
+    var url = E.url(); if (url && tracked()) SH.Health.fail(url, reason);
     saveProgress(true); stopBackend();
     if (E.retries < (SH.Store.get('autoRetry') || 0)) {
       E.retries++; setState('loading');
@@ -52,7 +53,7 @@
   }
 
   function start() {
-    var url = E.url(), g = ++gen;
+    var url = E.url(), g = ++gen, stream = E.item && E.item.streams[E.streamIndex];
     if (!url) { E.error = 'No stream address'; setState('error'); return; }
     started = false; E.error = ''; t0 = Date.now();
     setState('loading');
@@ -60,22 +61,28 @@
     var cb = {
       playing: function () {
         if (g !== gen) return;
-        if (!started) { started = true; SH.Health.ok(url, Date.now() - t0); E.retries = 0; if (E.isLive()) SH.Store.pushRecent(E.item.id); }
+        if (!started) { started = true; if (tracked()) SH.Health.ok(url, Date.now() - t0); E.retries = 0; if (E.isLive()) SH.Store.pushRecent(E.item.id); }
         if (E.state !== 'loading' && E.state !== 'buffering') return;
         disarm(); setState('playing');
       },
       buffering: function (on) {
         if (g !== gen || !started) return;
-        if (on) { if (E.state === 'playing') { SH.Health.buffer(url); setState('buffering'); arm(25, 'Playback stalled'); } }
+        if (on) { if (E.state === 'playing') { if (tracked()) SH.Health.buffer(url); setState('buffering'); arm(25, 'Playback stalled'); } }
         else if (E.state === 'buffering') { disarm(); setState('playing'); }
       },
       time: function () { if (g !== gen) return; saveProgress(false); SH.Bus.emit('player:time'); },
       ended: function () { if (g !== gen) return; disarm(); if (!E.isLive()) SH.Store.removeHistory(E.item.id); setState('ended'); },
       error: function (msg) { if (g === gen) fail(msg || 'Playback failed'); }
     };
-    backend = hasAv() ? avBackend() : htmlBackend();
-    applyRect();
-    try { backend.open(url, E.rect || FULL, E.startAt || 0, cb, E.isLive()); } catch (e) { cb.error('The player could not open this stream'); }
+    function open(real) {
+      if (g !== gen) return;
+      backend = hasAv() ? avBackend() : htmlBackend();
+      applyRect();
+      try { backend.open(real, E.rect || FULL, E.startAt || 0, cb, E.isLive()); } catch (e) { cb.error('The player could not open this stream'); }
+    }
+    /* some sources (Stalker) hand out a short-lived address that must be requested at play time */
+    if (stream && stream.resolve) SH.Catalog.resolve(stream, function (err, real) { if (g !== gen) return; if (err) cb.error(String(err.message || err)); else open(real); });
+    else open(url);
   }
 
   /* ---- public API ---- */
@@ -109,7 +116,7 @@
 
   /* ---- HTML5 backend ---- */
   function htmlBackend() {
-    var v = document.getElementById('html-player'), cb = null, on = {};
+    var v = document.getElementById('html-player'), cb = null, on = {}, hls = null, closed = false;
     function bind(ev, fn) { on[ev] = fn; v.addEventListener(ev, fn, false); }
     return {
       open: function (url, rect, startAt, c) {
@@ -120,10 +127,18 @@
         bind('ended', function () { cb.ended(); });
         bind('error', function () { cb.error(v.error && v.error.code === 4 ? 'This stream format is not supported on this device' : 'The stream could not be played'); });
         bind('loadedmetadata', function () { if (startAt) { try { v.currentTime = startAt; } catch (e) {} } });
-        v.src = url;
-        var p = v.play(); if (p && p.then) p.then(null, function () {});
+        var isHls = /\.m3u8(\?|$)/i.test(url) && !v.canPlayType('application/vnd.apple.mpegurl');
+        function go() {
+          if (isHls && window.Hls && Hls.isSupported()) {
+            hls = new Hls({ enableWorker: true, maxBufferLength: SH.Store.get('bufferSec') || 30 });
+            hls.on(Hls.Events.ERROR, function (e, d) { if (d && d.fatal) cb.error(d.type === 'networkError' ? 'The stream could not be reached' : 'The stream could not be played'); });
+            hls.loadSource(url); hls.attachMedia(v);
+          } else v.src = url;
+          var p = v.play(); if (p && p.then) p.then(null, function () {});
+        }
+        if (isHls && !window.Hls) SH.loadScript('vendor/hls.min.js', function () { if (closed) return; go(); }); else go();
       },
-      close: function () { for (var k in on) v.removeEventListener(k, on[k], false); on = {}; try { v.pause(); } catch (e) {} v.removeAttribute('src'); try { v.load(); } catch (e2) {} v.classList.add('hidden'); },
+      close: function () { closed = true; if (hls) { try { hls.destroy(); } catch (e0) {} hls = null; } for (var k in on) v.removeEventListener(k, on[k], false); on = {}; try { v.pause(); } catch (e) {} v.removeAttribute('src'); try { v.load(); } catch (e2) {} v.classList.add('hidden'); },
       pause: function () { v.pause(); }, resume: function () { var p = v.play(); if (p && p.then) p.then(null, function () {}); },
       pos: function () { return v.currentTime || 0; }, dur: function () { return isFinite(v.duration) ? v.duration : 0; },
       seek: function (s) { v.currentTime = s; }

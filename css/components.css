@@ -133,7 +133,7 @@
 /* ---- menus, forms, pin ---- */
 .menu-item { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; width: 684px; height: 58px; padding: 0 18px; border-radius: 10px; font-size: 23px; }
 .dialog.wide .menu-item { width: 884px; }
-.menu-item.tall { height: 86px; margin-bottom: 8px; background: rgba(255,255,255,0.04); }
+.menu-item.tall { height: 70px; margin-bottom: 6px; background: rgba(255,255,255,0.04); }
 .menu-item.static { color: #C9D1DE; }
 .menu-item.is-focused { background: #24344F; }
 .menu-item.selected { color: #398BFF; }
@@ -162,3 +162,7 @@
 .switch i { position: absolute; left: 4px; top: 4px; width: 26px; height: 26px; border-radius: 50%; background: #F5F7FC; -webkit-transition: left .12s; transition: left .12s; }
 .switch.on { background: #398BFF; }
 .switch.on i { left: 30px; }
+.form-error.working { color: #929EB0; }
+.link-code { margin: 18px 0 8px; text-align: center; font-size: 84px; font-weight: 700; letter-spacing: 0.18em; color: #F5F7FC; }
+.link-steps { color: #C9D1DE; font-size: 24px; text-align: center; margin-bottom: 14px; }
+.link-steps b { color: #398BFF; font-weight: 600; }

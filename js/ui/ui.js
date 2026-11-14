@@ -102,7 +102,7 @@
     else SH.Router.push('detail', { id: item.id });
   };
   UI.posterCard = function (item) {
-    var sub = [item.year || null, item.kind === 'series' ? SH.fmt.count(item.seasons.length, 'season') : null].filter(Boolean).join(' · ');
+    var sub = [item.year || null, item.kind === 'series' && item.seasons.length ? SH.fmt.count(item.seasons.length, 'season') : null].filter(Boolean).join(' · ');
     return h('div.card.poster.f', { 'data-fid': item.id, _enter: function () { UI.open(item); } }, [
       UI.art(item.poster, item.title), h('div.card-title', { text: item.title }), h('div.card-sub', { text: sub || (item.genres[0] || '') })
     ]);
@@ -208,9 +208,9 @@
   };
   /* Text entry uses the platform keyboard (Samsung IME on TV): press OK on a field to edit. */
   UI.form = function (o) {
-    var inputs = {}, err = h('div.form-error'), d;
+    var inputs = {}, err = h('div.form-error'), d, busy = false;
     var fields = o.fields.map(function (f, i) {
-      var input = h('input', { type: f.type || 'text', value: f.value || '', placeholder: f.placeholder || '', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false', tabindex: '-1' });
+      var input = h('input', { type: f.secret ? 'password' : (f.type || 'text'), value: f.value || '', placeholder: f.placeholder || '', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false', tabindex: '-1' });
       var wrap = h('div.field.f', { 'data-autofocus': i === 0 ? '1' : null, _enter: function () { input.focus(); } }, [h('label', { text: f.label }), input, f.hint ? h('div.field-hint', { text: f.hint }) : null]);
       input.addEventListener('focus', function () { wrap.classList.add('editing'); }, false);
       input.addEventListener('blur', function () { wrap.classList.remove('editing'); }, false);
@@ -219,8 +219,12 @@
     d = UI.dialog({
       title: o.title, text: o.text, wide: true, body: [h('div.form', { 'data-nav': 'col' }, fields), err],
       buttons: [{ label: 'Cancel' }, { label: o.submit || 'Save', primary: true, keep: true, run: function () {
+        if (busy) return;
         var vals = {}; for (var k in inputs) vals[k] = inputs[k].value.replace(/^\s+|\s+$/g, '');
-        var e = o.onSubmit(vals); if (e) err.textContent = e; else d.close();
+        /* onSubmit(vals) returns an error string, or - with o.async - calls done(errorOrNull) later */
+        if (!o.async) { var e = o.onSubmit(vals); if (e) err.textContent = e; else d.close(); return; }
+        busy = true; err.className = 'form-error working'; err.textContent = o.working || 'Checking…';
+        o.onSubmit(vals, function (e2) { busy = false; err.className = 'form-error'; if (d.closed) return; if (e2) err.textContent = String(e2.message || e2); else d.close(); });
       } }]
     });
     return d;

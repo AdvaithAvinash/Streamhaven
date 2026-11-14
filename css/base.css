@@ -66,7 +66,7 @@ body.no-motion * { -webkit-transition: none !important; transition: none !import
 .dialog-note { color: #F2B84B; font-size: 21px; margin-top: 10px; }
 .dialog-body { margin-top: 14px; }
 .dialog-actions { margin-top: 30px; -webkit-justify-content: flex-end; justify-content: flex-end; }
-#toasts { position: absolute; left: 610px; top: 28px; z-index: 30; width: 700px; text-align: center; }
+#toasts { position: absolute; left: 610px; bottom: 44px; z-index: 30; width: 700px; text-align: center; }
 .toast { display: table; margin: 0 auto 12px; padding: 14px 24px; max-width: 700px; text-align: left; background: #1E2C44; border: 1px solid rgba(255,255,255,0.1); border-left: 4px solid #45D6E8; border-radius: 10px; font-size: 22px; box-shadow: 0 12px 32px rgba(0,0,0,0.5); }
 .toast.ok { border-left-color: #5FD39A; }
 .toast.error { border-left-color: #F2707A; }

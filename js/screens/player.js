@@ -64,8 +64,9 @@
         if (nextEp) buttons.push(UI.button('Next episode', { icon: 'next', fid: 'p-next', run: function () { item = nextEp; E.play(item, { rect: null }); draw(); show(); } }));
         if (item.streams.length > 1) buttons.push(UI.button('Sources (' + item.streams.length + ')', { icon: 'sources', fid: 'p-src', run: sourcesMenu }));
         var ser = item.kind === 'episode' ? C.seriesOf(item) : null;
+        var cuTitle = item.kind === 'catchup';
         SH.add(bar, [h('div.p-main.vod', [
-          h('div.p-info', [h('div.p-title', { text: ser ? ser.title : item.title }), ser ? h('div.p-next', { text: 'S' + item.season + ' E' + item.number + ' · ' + item.title }) : null]),
+          h('div.p-info', [h('div.p-title', { text: ser ? ser.title : item.title }), cuTitle ? h('div.p-next', { text: 'Catch-up · ' + item.channel }) : null, ser ? h('div.p-next', { text: 'S' + item.season + ' E' + item.number + ' · ' + item.title }) : null]),
           seekEl, timeEl, h('div.btn-row', { 'data-nav': 'row' }, buttons)
         ])]);
         drawTime();

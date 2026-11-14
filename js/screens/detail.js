@@ -12,13 +12,14 @@
       if (item.kind === 'movie') return item;
       var hist = SH.Store.data().history;
       for (var i = 0; i < hist.length; i++) { var e = C.get(hist[i].id); if (e && e.kind === 'episode' && e.seriesId === item.id) return e; }
-      return item.seasons[0] && item.seasons[0].episodes[0];
+      return item.seasons[0] && item.seasons[0].episodes[0];   // lazy series: none until episodes load
     }
     function drawActions() {
       var fid = SH.Focus.current && actions.contains(SH.Focus.current) && SH.Focus.current.getAttribute('data-fid');
       SH.clear(actions);
       var t = resumeTarget(), hist = t && SH.Store.progress(t.id), resumable = hist && hist.pos > 20 && (!hist.dur || hist.pos < hist.dur * 0.95), inList = SH.Store.inList(item.id);
       var label = item.kind === 'series' && t ? (resumable ? 'Resume' : 'Play') + ' S' + t.season + ' E' + t.number : (resumable ? 'Resume from ' + SH.fmt.pos(hist.pos) : 'Play');
+      if (!t && item.kind === 'series') actions.appendChild(UI.button(item.loadError ? 'Episodes unavailable' : 'Loading…', { primary: true, auto: true, fid: 'd-wait', run: function () {} }));
       if (t) actions.appendChild(UI.button(label, { primary: true, icon: 'play', auto: true, fid: 'd-play', run: function () { SH.Router.push('player', { item: t, resume: true }); } }));
       if (t && resumable) actions.appendChild(UI.button('Start over', { icon: 'restart', fid: 'd-restart', run: function () { SH.Router.push('player', { item: t }); } }));
       actions.appendChild(UI.button(inList ? 'In My List' : 'Add to My List', { icon: inList ? 'check' : 'plus', fid: 'd-list', run: function () { UI.toast(SH.Store.toggleList(item) ? 'Added to My List' : 'Removed from My List'); drawActions(); } }));
@@ -57,6 +58,15 @@
         ])
       ])
     ]);
+    if (item.kind === 'series' && item.lazy && !item.seasons.length) {
+      var note = h('div.ep-note', { text: item.loadError ? 'Episodes could not be loaded: ' + item.loadError : 'Loading episodes…' });
+      page.track.appendChild(h('section.detail-episodes', [h('div.rail-head', { 'data-reveal': '1' }, [h('h2', { text: 'Episodes' })]), note]));
+      if (!item.loaded && !item.loading) {
+        C.loadEpisodes(item, function () { var cur = SH.Router.current; if (cur && cur.name === 'detail' && cur.params.id === item.id) SH.Router.refresh(); });
+      } else if (item.loadError) {
+        note.appendChild(h('div.btn-row', { style: 'margin-top:16px', 'data-nav': 'row' }, [UI.button('Try again', { icon: 'refresh', fid: 'ep-retry', run: function () { item.loaded = false; item.loadError = ''; SH.Router.refresh(); } })]));
+      }
+    }
     if (item.kind === 'series' && item.seasons.length) {
       var chipRow = h('div.chip-row', { 'data-nav': 'row' });
       var drawSeasons = function () {
