@@ -1,0 +1,72 @@
+/* Streamhaven base: stage, sidebar, screen scaffold, focus. Designed at 1920x1080; the stage is
+ * scaled for other window sizes. No CSS variables / grid / gap: must render on Chromium 47. */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
+body { font-family: "SamsungOne", "Samsung Sharp Sans", "Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 24px; line-height: 1.35; color: #F5F7FC; -webkit-font-smoothing: antialiased; -webkit-user-select: none; user-select: none; cursor: default; }
+h1, h2 { font-weight: 600; letter-spacing: -0.01em; }
+.hidden { display: none !important; }
+svg.ico { display: block; }
+
+#stage { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; overflow: hidden; background: #080D17; -webkit-transform-origin: 0 0; transform-origin: 0 0; }
+body.video-on #stage { background: transparent; }
+#player-layer { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; background: #000; z-index: 0; }
+#player-layer video, #player-layer object { position: absolute; left: 0; top: 0; width: 100%; height: 100%; background: #000; }
+#ui { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; z-index: 1; }
+#screens { position: absolute; left: 104px; top: 0; width: 1816px; height: 1080px; z-index: 1; }
+body.fs #screens { left: 0; width: 1920px; }
+body.fs #sidebar { display: none; }
+.screen { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+
+/* ---- sidebar ---- */
+#sidebar { position: absolute; left: 0; top: 0; width: 104px; height: 1080px; z-index: 5; background: #0B111D; border-right: 1px solid rgba(255,255,255,0.06); padding: 28px 16px 24px; display: -webkit-flex; display: flex; -webkit-flex-direction: column; flex-direction: column; overflow: hidden; -webkit-transition: width .16s ease-out; transition: width .16s ease-out; }
+#sidebar.expanded { width: 328px; box-shadow: 24px 0 48px rgba(0,0,0,0.45); }
+.brand { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; height: 56px; padding-left: 12px; margin-bottom: 28px; white-space: nowrap; }
+.brand-mark { -webkit-flex: none; flex: none; width: 48px; height: 48px; }
+.brand-name { margin-left: 18px; font-size: 30px; font-weight: 700; letter-spacing: -0.02em; opacity: 0; -webkit-transition: opacity .14s; transition: opacity .14s; }
+.nav-main { -webkit-flex: 1; flex: 1; }
+.nav-item { position: relative; display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; height: 62px; margin-bottom: 6px; padding-left: 21px; border-radius: 12px; color: #929EB0; white-space: nowrap; }
+.nav-ico { -webkit-flex: none; flex: none; width: 30px; height: 30px; }
+.nav-label { margin-left: 24px; font-size: 25px; font-weight: 500; opacity: 0; -webkit-transition: opacity .14s; transition: opacity .14s; }
+#sidebar.expanded .nav-label, #sidebar.expanded .brand-name { opacity: 1; }
+.nav-item.active { color: #F5F7FC; }
+.nav-item.active .nav-ico, .nav-item.active .nav-label { color: #398BFF; }
+.nav-item.active:before { content: ""; position: absolute; left: 0; top: 17px; width: 4px; height: 28px; border-radius: 2px; background: #398BFF; }
+.nav-item.is-focused { background: #172235; color: #F5F7FC; }
+.nav-item.profile { height: 72px; padding-left: 14px; margin: 10px 0 0; }
+.avatar { -webkit-flex: none; flex: none; width: 44px; height: 44px; border-radius: 50%; color: #06101F; font-size: 22px; font-weight: 700; line-height: 44px; text-align: center; }
+.profile .nav-label { margin-left: 17px; line-height: 1.2; }
+.profile-name { display: block; color: #F5F7FC; font-size: 23px; }
+.profile-sub { display: block; font-size: 17px; color: #929EB0; }
+.nav-foot { border-top: 1px solid rgba(255,255,255,0.06); padding-top: 12px; }
+
+/* ---- screen scaffold ---- */
+.screen-head { position: relative; z-index: 2; height: 112px; padding: 0 56px; display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; }
+.screen-head h1 { font-size: 44px; }
+.head-actions { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; margin-left: 40px; }
+.head-actions > * { margin-right: 14px; }
+.head-right { margin-left: auto; }
+.clock { font-size: 28px; font-weight: 500; color: #929EB0; }
+.page-view { position: absolute; left: 0; right: 0; top: 112px; bottom: 0; overflow: hidden; }
+.page-view.full { top: 0; }
+.page-track { position: relative; padding: 8px 0 96px 56px; -webkit-transition: -webkit-transform .22s ease-out; transition: transform .22s ease-out; will-change: transform; }
+.page-note { color: #929EB0; font-size: 22px; max-width: 1200px; margin: 0 0 20px; }
+
+/* ---- focus ---- */
+.f { -webkit-transition: -webkit-transform .12s ease-out, box-shadow .12s ease-out, background-color .12s ease-out; transition: transform .12s ease-out, box-shadow .12s ease-out, background-color .12s ease-out; }
+.f.is-focused { box-shadow: 0 0 0 3px #398BFF; }
+body.no-motion * { -webkit-transition: none !important; transition: none !important; -webkit-animation-duration: 1.2s; }
+
+/* ---- overlays ---- */
+#overlays { position: absolute; left: 0; top: 0; width: 0; height: 0; z-index: 20; }
+.overlay { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; background: rgba(4,8,15,0.74); display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; -webkit-justify-content: center; justify-content: center; }
+.dialog { width: 760px; max-height: 960px; padding: 40px 44px; background: #101827; border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; box-shadow: 0 30px 80px rgba(0,0,0,0.6); }
+.dialog.wide { width: 980px; }
+.dialog h2 { font-size: 34px; margin-bottom: 10px; }
+.dialog-text { color: #929EB0; font-size: 23px; margin-bottom: 8px; }
+.dialog-note { color: #F2B84B; font-size: 21px; margin-top: 10px; }
+.dialog-body { margin-top: 14px; }
+.dialog-actions { margin-top: 30px; -webkit-justify-content: flex-end; justify-content: flex-end; }
+#toasts { position: absolute; left: 610px; bottom: 44px; z-index: 30; width: 700px; text-align: center; }
+.toast { display: table; margin: 0 auto 12px; padding: 14px 24px; max-width: 700px; text-align: left; background: #1E2C44; border: 1px solid rgba(255,255,255,0.1); border-left: 4px solid #45D6E8; border-radius: 10px; font-size: 22px; box-shadow: 0 12px 32px rgba(0,0,0,0.5); }
+.toast.ok { border-left-color: #5FD39A; }
+.toast.error { border-left-color: #F2707A; }
