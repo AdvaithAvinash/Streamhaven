@@ -12,6 +12,7 @@
     search: '<circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/>',
     sources: '<ellipse cx="12" cy="6.5" rx="7.5" ry="3"/><path d="M4.5 6.5v5.5c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3V6.5M4.5 12v5.5c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3V12"/>',
     settings: '<circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8"/>',
+    sports: '<circle cx="12" cy="12" r="8.5"/><path d="m12 8.2 3.5 2.5-1.3 4.1H9.8l-1.3-4.1zM12 3.5v4.7M15.5 10.7l4.3-1.4M14.2 14.8l2.7 3.6M9.8 14.8l-2.7 3.6M8.5 10.7 4.2 9.3"/>',
     play: '<path d="M7.5 4.8v14.4L19.5 12z" fill="currentColor"/>',
     pause: '<path d="M8 5v14M16 5v14" stroke-width="3"/>',
     plus: '<path d="M12 5v14M5 12h14"/>',

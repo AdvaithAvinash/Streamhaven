@@ -182,3 +182,28 @@ body.video-on .video-hole { box-shadow: 0 0 0 4000px #080D17; }
 .sc-guide { margin: -8px 0 18px; color: #929EB0; font-size: 19px; }
 .sc-guide.err { color: #F2B84B; }
 .menu.scroll { overflow: visible; }
+
+/* ---- live sports ---- */
+.sports-body { position: absolute; left: 0; right: 0; top: 124px; bottom: 0; }
+.sports-body .vgrid { margin-left: 48px; }
+.sports-body .lib-count { padding-left: 64px; }
+.sports-body .empty { margin-left: 400px; }
+.sp-state { margin: 240px 0 0 800px; text-align: center; width: 300px; }
+.sp-state .spinner { margin: 0 auto; }
+.card.match { width: 552px; height: 168px; padding: 18px 22px; background: #172235; border: 1px solid rgba(255,255,255,0.06); }
+.card.match.is-focused { background: #1E2C44; -webkit-transform: none; transform: none; }
+.mc-top { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; margin-bottom: 12px; }
+.mc-league { -webkit-flex: 1; flex: 1; min-width: 0; color: #929EB0; font-size: 19px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mc-when { -webkit-flex: none; flex: none; margin-left: 14px; color: #45D6E8; font-size: 19px; font-weight: 600; white-space: nowrap; display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; }
+.mc-when.live { color: #F2707A; }
+.mc-when i { width: 8px; height: 8px; margin-right: 8px; border-radius: 50%; background: #F2707A; }
+.mc-team { display: -webkit-flex; display: flex; font-size: 25px; font-weight: 600; line-height: 1.35; }
+.mc-team span { -webkit-flex: 1; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mc-team b { -webkit-flex: none; flex: none; margin-left: 12px; color: #F5F7FC; }
+.mc-foot { margin-top: 10px; height: 28px; }
+.mc-none { color: #6F7B8F; font-size: 18px; }
+.sp-detail .meta { margin-bottom: 10px; }
+.dialog-note.soft { color: #929EB0; font-size: 19px; margin: 0 0 14px; }
+.embed-frame { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; border: 0; background: #000; }
+.embed-hint { position: absolute; left: 50%; bottom: 36px; margin-left: -520px; width: 1040px; padding: 12px 22px; text-align: center; border-radius: 10px; background: rgba(16,24,39,0.9); border: 1px solid rgba(255,255,255,0.1); color: #C9D1DE; font-size: 20px; -webkit-transition: opacity .3s; transition: opacity .3s; }
+.embed-hint.gone { opacity: 0; }

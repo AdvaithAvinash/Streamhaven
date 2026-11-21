@@ -16,9 +16,20 @@ A clean, premium IPTV and media app for Samsung Tizen TVs. Dependency-free web a
 | **Stalker Portal** (live, movies, guide) | Implemented, tested against a mock server, **Android only** (see below) |
 | Playback engine (AVPlay with HTML5 + hls.js fallback), watchdogs, retry, stream health | Implemented; **AVPlay path never run on a real TV** |
 | Profiles, favourites, My List, collections, reminders, PIN, backup | Implemented |
+| **Live Sports** (Matchora API: live matches, fixtures, channels, embedded player) | Implemented against the documented endpoints; **response format unverified** (see below) |
 | QR companion setup, Stalker series, Jellyfin/Emby live TV, watch-state sync back to servers | Not yet |
 
 Nothing has been tried against a real Xtream, Stalker, Jellyfin, Emby or Plex server yet; the clients follow the public protocols and were exercised against mocks written from them.
+
+### Live Sports (Matchora)
+
+The Live Sports section uses the public Matchora API at `https://matchora.to` (`/api/v1/live`, `/schedule`, `/events/{id}`).
+
+- **No stream addresses are exposed by the API.** Matchora's player runs in an embedded frame inside Streamhaven and shows Matchora's adverts. The frame is sandboxed without pop-ups or top-level navigation.
+- **Ad-free option.** For each channel Matchora lists, Streamhaven looks for the same channel by name in your own sources ("HD" and similar suffixes are ignored). If it finds one, it offers to play it with the normal player.
+- **The JSON field names are a best guess.** The documentation I was given lists endpoints and filters but not response bodies, and the host could not be reached from the build environment. All mapping is in one function, `normalize()` in `js/data/sports.js`, written to accept the common spellings and to show a placeholder rather than crash. It was tested against two invented response shapes only. If matches show wrong or missing details, send a sample response and that function is the only thing to adjust.
+- **Remote control on Tizen.** Keys pressed while the embedded frame has focus may not reach Streamhaven. Streamhaven keeps focus itself, so BACK closes the player; controls inside the frame are reached with the pointer. On Android, OK hands keys to the frame and BACK always closes it.
+- **Rate limits** apply per IP: live results are cached for 45 seconds and fixtures for 5 minutes; Refresh always asks again.
 
 ### Provider notes
 

@@ -83,6 +83,7 @@
   function httpError(status) {
     if (status === 401 || status === 403) return 'Access was refused. Check your login details';
     if (status === 404) return 'The address was not found on the server';
+    if (status === 429) return 'Too many requests. Try again in a minute';
     return 'Server returned ' + status;
   }
   SH.hasNativeHttp = function () { return !!window.SHNative; };

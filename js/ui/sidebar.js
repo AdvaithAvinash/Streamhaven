@@ -2,7 +2,7 @@
 (function () {
   'use strict';
   var SH = window.SH, h = SH.h;
-  var ITEMS = [['home', 'Home'], ['live', 'Live TV'], ['guide', 'TV Guide'], ['movies', 'Movies'], ['series', 'Series'], ['discover', 'Discover'], ['mylist', 'My List'], ['search', 'Search'], ['sources', 'Sources'], ['settings', 'Settings']];
+  var ITEMS = [['home', 'Home'], ['live', 'Live TV'], ['guide', 'TV Guide'], ['sports', 'Live Sports'], ['movies', 'Movies'], ['series', 'Series'], ['discover', 'Discover'], ['mylist', 'My List'], ['search', 'Search'], ['sources', 'Sources'], ['settings', 'Settings']];
   var els = {}, active = 'home', profileEl;
 
   function item(name, label) {
@@ -24,7 +24,7 @@
     ITEMS: ITEMS,
     init: function () {
       profileEl = h('div.nav-item.profile.f', { _enter: profileSwitcher });
-      var main = ITEMS.slice(0, 9).map(function (i) { return item(i[0], i[1]); });
+      var main = ITEMS.filter(function (i) { return i[0] !== 'settings'; }).map(function (i) { return item(i[0], i[1]); });
       S.el = h('aside#sidebar', { 'data-nav': 'col' }, [
         h('div.brand', [h('span.brand-mark', { html: SH.logo(48) }), h('span.brand-name', { text: 'Streamhaven' })]),
         h('nav.nav-main', main),
