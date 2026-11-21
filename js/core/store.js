@@ -5,7 +5,7 @@
   var DEFAULTS = {
     landing: 'home', clock24: true, accent: '#398BFF', reduceMotion: false,
     tuneMode: 'ok', overlayTimeout: 5, showHealth: true,
-    startTimeout: 15, autoRetry: 1, bufferSec: 0, audioLang: '', subLang: '', subtitles: false,
+    artSource: 'auto', tmdbKey: '', startTimeout: 15, autoRetry: 1, bufferSec: 0, audioLang: '', subLang: '', subtitles: false,
     reminderLead: 1, guideSpan: 24, autoRefresh: true,
     pin: '', pinSources: false, hideAdult: false
   };

@@ -11,10 +11,6 @@
 
   function addForm(type) {
     var pr = SH.Providers[type], t = C.TYPES[type];
-    if (type === 'demo') {
-      if (C.sources.some(function (s) { return s.type === 'demo'; })) { UI.toast('The demo library is already added'); return; }
-      C.addSource({ type: 'demo', name: 'Demo library' }); UI.toast('Demo library added'); return;
-    }
     if (type === 'plex') return plexFlow(null);
     var note = type === 'stalker' && !SH.canSendHeaders() ? 'Heads up: Stalker portals need the Android app or the Cloudflare Pages web build. This device cannot send the headers they require, so signing in will most likely fail.' : 'Press OK on a field to type.';
     UI.form({ title: 'Add ' + t.label, text: note, submit: 'Add source', async: true, working: 'Checking the connection…', fields: pr.form.fields,
@@ -74,7 +70,7 @@
   }
 
   function addDialog() {
-    var d = UI.dialog({ title: 'Add a source', wide: true, body: [h('div.menu.scroll', { 'data-nav': 'col' }, C.ORDER.filter(C.ready.bind(C)).concat(['demo']).filter(function (k, i, a) { return a.indexOf(k) === i; }).map(function (k) {
+    var d = UI.dialog({ title: 'Add a source', wide: true, body: [h('div.menu.scroll', { 'data-nav': 'col' }, C.ORDER.filter(C.ready.bind(C)).map(function (k) {
       return h('div.menu-item.tall.f', { _enter: function () { d.close(); addForm(k); } }, [h('span.menu-ico', { html: SH.icon(C.TYPES[k].icon, 26) }), h('div', [h('div', { text: C.TYPES[k].label }), h('div.menu-desc', { text: C.TYPES[k].desc })])]);
     }))] });
   }

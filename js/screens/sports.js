@@ -12,7 +12,7 @@
         h('div.mc-team' + (m.away ? '' : '.single'), [badge(m.homeBadge, m.home, m.awayBadge), h('span', { text: m.home || m.title }), sc ? h('b', { text: sc[0] }) : null]),
         m.away ? h('div.mc-team', [badge(m.awayBadge, m.away, m.homeBadge), h('span', { text: m.away }), sc ? h('b', { text: sc[1] }) : null]) : null
       ]),
-      h('div.mc-foot', [m.channelCount ? h('span.tag', { text: SH.fmt.count(m.channelCount, 'channel') }) : h('span.mc-none', { text: 'No channels listed' }), m.watching ? h('span.mc-watching', { text: SH.fmt.count(m.watching, 'viewer') + ' on Matchora' }) : null])
+      h('div.mc-foot', [m.channelCount ? h('span.tag', { text: SH.fmt.count(m.channelCount, 'channel') }) : null, m.watching ? h('span.mc-watching', { text: SH.fmt.count(m.watching, 'viewer') + ' on Matchora' }) : null])
     ]);
   }
 

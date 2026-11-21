@@ -15,6 +15,7 @@ A clean, premium IPTV and media app for Samsung Tizen TVs. Dependency-free web a
 | **Plex** (link with a plex.tv code, movies, shows) | Implemented, tested against a mock server |
 | **Stalker Portal** (live, movies, guide) | Implemented, tested against a mock server, **Android only** (see below) |
 | Playback engine (AVPlay with HTML5 + hls.js fallback), watchdogs, retry, stream health | Implemented; **AVPlay path never run on a real TV** |
+| **Covers and metadata** from Cinemeta (no key) or TMDB (optional key in Settings) | Implemented; Cinemeta checked against the live service, TMDB against its documented format only |
 | Profiles, favourites, My List, collections, reminders, PIN, backup | Implemented |
 | **Live Sports** (Matchora API: live matches, fixtures, channels, embedded player) | Implemented; response format verified against live responses |
 | QR companion setup, Stalker series, Jellyfin/Emby live TV, watch-state sync back to servers | Not yet |
@@ -62,6 +63,19 @@ Limits:
 - **Playback.** A plain `http` stream cannot play on an `https` page; the player says so. `https` streams play if the browser supports their format; HLS in browsers without native support goes through hls.js, which also needs CORS on the stream host. Use the Tizen or Android app for real viewing.
 - **AVPlay** and the Samsung remote keys exist only on a TV.
 - Tested here with the local Pages runtime (`wrangler pages dev`) against mock servers; not yet deployed to Cloudflare. Outbound connections to unusual server ports from a deployed Function have not been tried.
+
+### Covers and metadata
+
+Movie and series covers, backdrops, plots, ratings, cast and episode stills come from **Cinemeta** (the free Stremio metadata service, no account) by default. Add a **TMDB** API key under Settings, Artwork and Metadata and Streamhaven uses TMDB instead (a v3 key or a v4 read access token both work; the key is checked before it is saved). "Provider artwork only" turns the lookups off.
+
+- **Only titles are sent** to Cinemeta or TMDB, never logins or source addresses. Results are cached on the device.
+- **Matching is strict.** Titles are cleaned first (`EN - Interstellar (2014) 1080p` becomes `Interstellar`, 2014), then a cover is only used for an exact title, or a close title with the right year. When nothing matches with confidence, the provider's own cover is kept; with none, the title is shown as plain type. A wrong picture is treated as worse than none.
+- **No placeholders.** Channel logos, team badges and covers that are missing or fail to load leave an empty slot rather than a letter tile, and screens never fill space with "No programme information" style text. The invented demo library was removed from the app (it lives in `tools/testdata` for tests only).
+- The TMDB path was written from TMDB's documented format and its real error response; no TMDB key was available to try a successful call.
+
+### Live TV
+
+Live TV opens already playing (last watched channel, else the first). Categories are one scrolling rail above the list (All, Favourites, Recent, Source and Country pickers, then every category); picking one keeps focus on the rail so you can keep browsing. Number keys type a channel number, in the list and in the full-screen player: it tunes after a short pause, or at once on OK.
 
 ### Live Sports (Matchora)
 

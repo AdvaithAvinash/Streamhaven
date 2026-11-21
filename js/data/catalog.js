@@ -28,10 +28,9 @@
       emby: { label: 'Emby', desc: 'Your Emby server: movies and series', icon: 'movies' },
       plex: { label: 'Plex', desc: 'Link your Plex account with a code', icon: 'movies' },
       xmltv: { label: 'XMLTV guide', desc: 'A programme guide for your channels (.xml or .xml.gz)', icon: 'guide' },
-      direct: { label: 'Direct stream URL', desc: 'A single live stream or video file', icon: 'play' },
-      demo: { label: 'Demo library', desc: 'Sample channels, guide and titles for exploring the app', icon: 'discover' }
+      direct: { label: 'Direct stream URL', desc: 'A single live stream or video file', icon: 'play' }
     },
-    ORDER: ['m3u', 'xtream', 'stalker', 'jellyfin', 'emby', 'plex', 'xmltv', 'direct', 'demo']
+    ORDER: ['m3u', 'xtream', 'stalker', 'jellyfin', 'emby', 'plex', 'xmltv', 'direct']
   };
 
   var FIELDS = ['id', 'type', 'name', 'url', 'cfg', 'status', 'lastSync', 'counts', 'error', 'info', 'epgUrl', 'epgStatus', 'epgError', 'epgAt', 'epgCount'];
@@ -187,18 +186,20 @@
       });
       d.movies.forEach(function (rm) {
         if (hideAdult && ADULT.test((rm.genres || []).join(' '))) return;
-        var id = 'm:' + SH.norm(rm.title) + (rm.year ? ' ' + rm.year : ''), m = mvMap[id];
+        var cm = SH.Meta.clean(rm.title), mt = cm.title || rm.title, my = rm.year || cm.year || 0;
+        var id = 'm:' + SH.norm(mt) + (my ? ' ' + my : ''), m = mvMap[id];
         if (!m) {
-          m = mvMap[id] = byId[id] = SH.assign({}, rm, { id: id, kind: 'movie', genres: rm.genres || [], streams: [] }); delete m.url; delete m.resolve;
+          m = mvMap[id] = byId[id] = SH.assign({}, rm, { id: id, kind: 'movie', title: mt, year: my, genres: rm.genres || [], streams: [] }); delete m.url; delete m.resolve;
           C.movies.push(m); m.genres.forEach(function (g) { uniqPush(C.genres.movie, g); }); uniqPush(C.years.movie, m.year);
         }
         m.streams.push(mkStream(src, rm));
       });
       d.series.forEach(function (rs) {
         if (hideAdult && ADULT.test((rs.genres || []).join(' '))) return;
-        var id = 's:' + SH.norm(rs.title), s = srMap[id];
+        var cs = SH.Meta.clean(rs.title), st = cs.title || rs.title;
+        var id = 's:' + SH.norm(st), s = srMap[id];
         if (s) { uniqPush(s.sourceIds, src.id); return; }
-        s = srMap[id] = byId[id] = SH.assign({}, rs, { id: id, kind: 'series', genres: rs.genres || [], sourceIds: [src.id], seasons: [], lazy: rs.lazy ? { sourceId: src.id, id: rs.lazy.id } : null });
+        s = srMap[id] = byId[id] = SH.assign({}, rs, { id: id, title: st, year: rs.year || cs.year || 0, kind: 'series', genres: rs.genres || [], sourceIds: [src.id], seasons: [], lazy: rs.lazy ? { sourceId: src.id, id: rs.lazy.id } : null });
         delete s.episodes;
         var eps = rs.episodes || (rs.lazy && lazyCache[src.id + ':' + rs.lazy.id]);
         if (eps) addEpisodes(s, src.id, eps);

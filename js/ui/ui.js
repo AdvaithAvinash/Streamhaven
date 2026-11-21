@@ -13,24 +13,74 @@
       var r = p.getBoundingClientRect();
       if (r.right > -W * 0.4 && r.left < W * 1.4 && r.bottom > -H * 0.4 && r.top < H * 1.4) { im.src = im.getAttribute('data-src'); im.removeAttribute('data-src'); }
     }
+    var metas = document.querySelectorAll('[data-meta]');
+    for (var j = 0; j < metas.length; j++) {
+      var el = metas[j]; if (el.offsetParent === null || el._asked) continue;
+      var q = el.getBoundingClientRect();
+      if (q.right > -W * 0.4 && q.left < W * 1.4 && q.bottom > -H * 0.4 && q.top < H * 1.4) {
+        el._asked = true;
+        (function (e) { SH.Meta.lookup(e._item, function () { e._refresh(true); }); })(el);
+      }
+    }
   }, 100);
   SH.Bus.on('focus', function () { UI.lazy(); });
 
-  /* Artwork with a typographic fallback tile, so a missing logo or poster never leaves a hole. */
-  UI.art = function (url, label, cls, initials) {
-    var el = h('div.art' + (cls ? '.' + cls : '')), text = label || '';
-    if (initials) text = text.replace(/[^A-Za-z0-9À-￿ ]/g, '').split(' ').filter(Boolean).slice(0, 2).map(function (x) { return x.charAt(0).toUpperCase(); }).join('');
-    el.style.backgroundColor = 'hsl(' + (SH.hash(label || '') % 360) + ',26%,19%)';
-    el.appendChild(h('span.art-label', { text: text }));
-    if (url) {
+  /* Image slot. There is deliberately no placeholder: until the picture arrives the slot is empty, and when it never
+   * arrives (no logo, broken address) it stays empty so the name beside it carries the identity. */
+  UI.art = function (url, label, cls) {
+    var el = h('div.art' + (cls ? '.' + cls : ''));
+    el._set = function (u) {
+      var old = el.querySelector('img'); if (old) el.removeChild(old);
+      el.classList.remove('has');
+      if (!u) return;
       var img = document.createElement('img');
-      img.setAttribute('data-src', url); img.alt = '';
-      img.onload = function () { img.className = 'loaded'; };
-      img.onerror = function () { if (img.parentNode) img.parentNode.removeChild(img); };
+      img.setAttribute('data-src', u); img.alt = '';
+      img.onload = function () { img.className = 'loaded'; el.classList.add('has'); };
+      img.onerror = function () { if (img.parentNode) img.parentNode.removeChild(img); el.classList.remove('has'); if (el._failed) el._failed(); };
       el.appendChild(img);
-    }
+      UI.lazy();                      // the picture may arrive after the card is already on screen
+    };
+    if (url) el._set(url);
     return el;
   };
+
+  /* A channel logo, or nothing. When some rows in a list have logos and others do not, `any` keeps names aligned with an empty slot. */
+  UI.logo = function (ch, any, cls) { return ch.logo ? UI.art(ch.logo, ch.name, cls || 'logo') : (any ? h('div.art.logo.empty') : null); };
+
+  /* Cover for a movie or series: Cinemeta / TMDB artwork when it can be found with confidence, otherwise the provider's own,
+   * otherwise (posters only) the title set as plain type. kind: 'poster' | 'backdrop' | 'hero'. */
+  UI.metaArt = function (item, kind, cls) {
+    var el = UI.art('', item.title, cls), titleText = kind === 'poster';
+    function titled() { if (titleText && !el.querySelector('.art-title')) el.appendChild(h('span.art-title', { text: item.title })); el.classList.add('titled'); }
+    el._failed = titled;
+    function show(u) { el.removeAttribute('data-meta'); if (u) el._set(u); else titled(); }
+    el._refresh = function (force) {
+      var u = SH.Meta.art(item, kind);
+      if (u === undefined) { if (!force) return; u = (kind === 'poster' ? item.poster : (item.backdrop || item.poster)) || ''; }
+      show(u);
+    };
+    el._item = item;
+    var u0 = SH.Meta.art(item, kind);
+    if (u0 === undefined) el.setAttribute('data-meta', '1'); else show(u0);
+    return el;
+  };
+
+  /* Number keys: type a channel number, it tunes after a short pause (or at once on OK). */
+  UI.zap = (function () {
+    var buf = '', timer = null, box = null, commit = null;
+    function show() {
+      if (!box) { box = h('div.zap.hidden'); document.getElementById('stage').appendChild(box); }
+      var ch = SH.Catalog.channels[+buf - 1];
+      SH.clear(box); SH.add(box, [h('div.zap-num', { text: buf }), h('div.zap-name' + (ch ? '' : '.dim'), { text: ch ? ch.name : 'No such channel' })]);
+      box.classList.remove('hidden');
+    }
+    function end() { clearTimeout(timer); timer = null; var n = +buf; buf = ''; if (box) box.classList.add('hidden'); return n; }
+    return {
+      key: function (d, fn) { if (buf.length >= 4) buf = ''; buf += d; commit = fn; show(); clearTimeout(timer); timer = setTimeout(function () { var n = end(); if (commit && n) commit(n); }, 1500); },
+      active: function () { return buf !== ''; },
+      flush: function () { if (buf === '') return; var n = end(); if (commit && n) commit(n); }
+    };
+  })();
 
   /* ---- small pieces ---- */
   UI.clock = function () { return h('span.clock', { text: SH.fmt.time(Date.now()) }); };
@@ -92,7 +142,7 @@
       o.text ? h('p.hero-text', { text: o.text }) : null,
       h('div.btn-row', { 'data-nav': 'row' }, o.buttons)
     ]);
-    return h('section.hero' + (o.compact ? '.compact' : ''), { 'data-reveal': '1' }, [UI.art(o.art, o.title, 'hero-art'), h('div.hero-shade'), body]);
+    return h('section.hero' + (o.compact ? '.compact' : ''), { 'data-reveal': '1' }, [o.item ? UI.metaArt(o.item, 'hero', 'hero-art') : UI.art(o.art, o.title, 'hero-art'), h('div.hero-shade'), body]);
   };
 
   /* ---- cards ---- */
@@ -104,13 +154,13 @@
   UI.posterCard = function (item) {
     var sub = [item.year || null, item.kind === 'series' && item.seasons.length ? SH.fmt.count(item.seasons.length, 'season') : null].filter(Boolean).join(' · ');
     return h('div.card.poster.f', { 'data-fid': item.id, _enter: function () { UI.open(item); } }, [
-      UI.art(item.poster, item.title), h('div.card-title', { text: item.title }), h('div.card-sub', { text: sub || (item.genres[0] || '') })
+      UI.metaArt(item, 'poster', 'poster-art'), h('div.card-title', { text: item.title }), h('div.card-sub', { text: sub || (item.genres[0] || '') })
     ]);
   };
   UI.wideCard = function (item, hist) {
     var parent = item.kind === 'episode' ? SH.Catalog.seriesOf(item) : item, left = hist.dur ? Math.max(1, Math.round((hist.dur - hist.pos) / 60)) + ' min left' : 'Resume';
     var el = h('div.card.wide.f', { 'data-fid': 'cw' + item.id, _enter: function () { SH.Router.push('player', { item: item, resume: true }); } }, [
-      UI.art(parent.backdrop || parent.poster, parent.title),
+      UI.metaArt(parent, 'backdrop', 'wide-art'),
       hist.dur ? UI.progress(hist.pos / hist.dur, 'on-art') : null,
       h('div.card-title', { text: parent.title }),
       h('div.card-sub', { text: (item.kind === 'episode' ? 'S' + item.season + ' E' + item.number + ' · ' : '') + left })
@@ -128,9 +178,9 @@
   UI.channelCard = function (ch, list) {
     var p = SH.Epg.now(ch);
     return h('div.card.channel.f', { 'data-fid': ch.id, _enter: function () { UI.open(ch, list); } }, [
-      h('div.ch-top', [UI.art(ch.logo, ch.name, 'logo', true), h('div.ch-id', [h('div.card-title', { text: ch.name }), h('div.ch-group', { text: ch.group })]), UI.live()]),
-      h('div.ch-now', { text: p ? p.t : 'No programme information' }),
-      p ? UI.progress(SH.Epg.progress(p)) : h('div.bar.off')
+      h('div.ch-top', [UI.logo(ch, false), h('div.ch-id', [h('div.card-title', { text: ch.name }), h('div.ch-group', { text: ch.group })]), UI.live()]),
+      p ? h('div.ch-now', { text: p.t }) : null,
+      p ? UI.progress(SH.Epg.progress(p)) : null
     ]);
   };
   UI.progCard = function (ch, p, run) {
@@ -147,7 +197,7 @@
     var p = SH.Epg.now(ch);
     return h('div.ch-row.f' + (o.tuned ? '.tuned' : ''), { 'data-fid': ch.id }, [
       h('span.ch-num', { text: ch.num }),
-      UI.art(ch.logo, ch.name, 'logo', true),
+      UI.logo(ch, o.anyLogo),
       h('div.ch-row-text', [h('div.ch-row-name', { text: ch.name }), h('div.ch-row-now', { text: p ? p.t : ch.group })]),
       SH.Store.isFav(ch.id) ? h('span.ch-fav', { html: SH.icon('heartOn', 20) }) : null,
       SH.Store.get('showHealth') ? UI.health(ch, 0, true) : null

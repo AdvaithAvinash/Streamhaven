@@ -7,6 +7,17 @@
     var item = C.get(params.id), page = UI.page({ noHead: true });
     if (!item) { page.track.appendChild(UI.empty('alert', 'This title is no longer available', 'Its source may have been removed or changed.', [UI.button('Go back', { primary: true, run: function () { SH.Router.back(); } })])); return { el: page.el }; }
     var season = 0, epWrap = h('div'), actions = h('div.btn-row', { 'data-nav': 'row' });
+    /* richer plot, rating, cast and episode info, once per source (series: after the episodes are known) */
+    var msrc = SH.Meta.source();
+    if (msrc && item._metaSrc !== msrc && !item._metaBusy && (item.kind === 'movie' || item.seasons.length)) {
+      item._metaBusy = true;
+      SH.Meta.detail(item, function (d) {
+        item._metaBusy = false; item._metaSrc = msrc;
+        if (!d) return;
+        SH.Meta.apply(item, d);
+        var cur = SH.Router.current; if (cur && cur.name === 'detail' && cur.params.id === item.id) SH.Router.refresh();
+      });
+    }
 
     function resumeTarget() {            // movie itself, or the episode to continue with
       if (item.kind === 'movie') return item;
@@ -32,6 +43,7 @@
       epWrap.appendChild(h('div.ep-list', { 'data-nav': 'col' }, se.episodes.map(function (ep) {
         var hist = SH.Store.progress(ep.id);
         return h('div.ep-row.f', { 'data-fid': ep.id, _enter: function () { SH.Router.push('player', { item: ep, resume: true }); } }, [
+          ep.thumb ? UI.art(ep.thumb, '', 'ep-thumb') : null,
           h('span.ep-num', { text: ep.number }),
           h('div.ep-text', [h('div.ep-title', { text: ep.title }), ep.plot ? h('div.ep-plot', { text: ep.plot }) : null, hist && hist.dur ? UI.progress(hist.pos / hist.dur) : null]),
           h('span.ep-dur', { text: SH.fmt.dur(ep.duration) })
@@ -44,9 +56,9 @@
     if (item.cast && item.cast.length) people.push(h('div.d-people', [h('b', { text: 'Cast  ' }), item.cast.join(', ')]));
     SH.add(page.track, [
       h('section.detail-top', { 'data-reveal': '1' }, [
-        UI.art(item.backdrop, item.title, 'hero-art'), h('div.hero-shade'),
+        UI.metaArt(item, 'hero', 'hero-art'), h('div.hero-shade'),
         h('div.detail-body', [
-          UI.art(item.poster, item.title, 'detail-poster'),
+          UI.metaArt(item, 'poster', 'detail-poster'),
           h('div.detail-text', [
             h('div.hero-eyebrow', [h('span', { text: item.kind === 'series' ? 'Series' : 'Movie' })]),
             h('h1', { text: item.title }),
