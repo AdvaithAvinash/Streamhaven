@@ -1,4 +1,5 @@
-/* Opt-in demo library. Clearly labelled sample data so the interface can be explored without a
+/* TEST DATA ONLY (not shipped in the app). Loaded by the tests to get a library without a provider.
+ * Opt-in demo library. Clearly labelled sample data so the interface can be explored without a
  * provider. Never added automatically. All names are invented; artwork is generated locally. */
 (function () {
   'use strict';
@@ -119,4 +120,7 @@
       return out;
     }
   };
+  SH.Providers = SH.Providers || {};
+  SH.Providers.demo = { sync: function (src, cb) { setTimeout(function () { cb(null, SH.Demo.build()); }, 0); } };
+  if (SH.Catalog) SH.Catalog.TYPES.demo = { label: 'Demo library', desc: 'test data', icon: 'discover' };
 })();

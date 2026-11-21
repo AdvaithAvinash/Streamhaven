@@ -142,7 +142,7 @@
     window.addEventListener('offline', function () { UI.toast('Network connection lost', 'error'); SH.Bus.emit('net', false); }, false);
     window.addEventListener('online', function () { UI.toast('Back online', 'ok'); SH.Bus.emit('net', true); }, false);
 
-    C.init();
+    SH.initProxy(function () { C.init(); });
     var start = SH.Store.get('landing'); if (!R.defs[start] || start === 'sources' || start === 'settings') start = 'home';
     App.go(start);
     setInterval(function () { if (R.current && R.current.tick) R.current.tick(); checkReminders(); }, 30000);

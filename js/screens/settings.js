@@ -87,6 +87,20 @@
       toggle('Reduce motion', 'reduceMotion', 'Turns off focus and scrolling animations. Recommended on older TVs.'),
       action('Home screen layout', 'Customise', homeLayout, 'Show, hide and reorder home sections.')
     ]; }],
+    ['artwork', 'Artwork and Metadata', function () {
+      var key = S.get('tmdbKey');
+      return [
+        choice('Cover source', 'artSource', [['auto', 'Automatic'], ['cinemeta', 'Cinemeta'], ['tmdb', 'TMDB'], ['off', 'Provider artwork only']], 'Automatic uses TMDB once you add a key, and Cinemeta until then. Only titles are sent, never logins or source addresses.'),
+        action('TMDB API key', key ? 'Saved · ••••' + key.slice(-4) : 'Not set', function () {
+          UI.form({ title: 'TMDB API key', text: 'Optional. Paste an API key (v3) or a read access token from themoviedb.org/settings/api. Without one Streamhaven uses Cinemeta.', submit: 'Save', async: true, working: 'Checking the key…',
+            fields: [{ key: 'k', label: 'API key or read access token', secret: true }],
+            onSubmit: function (v, done) { if (!v.k) return done('Paste your key first.'); SH.Meta.testKey(v.k, function (err) { if (err) return done(err); S.set('tmdbKey', v.k); UI.toast('TMDB key saved', 'ok'); done(null); }); } });
+        }, 'Better matches and localised covers.'),
+        key ? action('Remove TMDB key', '', function () { S.set('tmdbKey', ''); UI.toast('TMDB key removed'); }) : null,
+        action('Clear cover cache', SH.fmt.count(SH.Meta.count(), 'title'), function () { SH.Meta.clear(); UI.toast('Cover cache cleared'); redraw(); }, 'Covers are looked up again as you browse.'),
+        info('Using now', SH.Meta.sourceLabel())
+      ].filter(Boolean);
+    }],
     ['playback', 'Playback', function () { return [
       choice('Start-up timeout', 'startTimeout', [[8, '8 seconds'], [15, '15 seconds'], [25, '25 seconds'], [40, '40 seconds']], 'How long to wait for a stream before treating it as failed.'),
       choice('Automatic retries', 'autoRetry', [[0, 'Off'], [1, 'Once'], [2, 'Twice']], 'Retry a failed stream before showing an error.'),
@@ -151,7 +165,7 @@
       action('Reset Streamhaven', '', function () { UI.guard(function () { UI.confirm('Reset Streamhaven?', 'All sources, profiles, history and settings on this TV are erased.', 'Reset', function () { SH.ls.keys('sh.').forEach(SH.ls.del); location.reload(); }, true); }); })
     ]; }],
     ['about', 'About Streamhaven', function () { return [
-      info('Version', SH.version), info('Platform', platform()), info('Playback engine', SH.Engine.engineName()), info('Screen', window.screen.width + ' × ' + window.screen.height),
+      info('Version', SH.version), info('Platform', platform()), info('Playback engine', SH.Engine.engineName()), info('Network', SH.hasNativeHttp() ? 'Native (headers and CORS handled by the app)' : (SH.proxy ? 'Through this site\'s /proxy' : 'Direct from the page')), info('Screen', window.screen.width + ' × ' + window.screen.height),
       info('Source types', 'M3U, Xtream Codes, Stalker, Jellyfin, Emby, Plex, XMLTV, direct URL'), info('Not yet available', 'QR companion setup')
     ]; }]
   ];

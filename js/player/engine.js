@@ -76,6 +76,7 @@
     };
     function open(real) {
       if (g !== gen) return;
+      if (location.protocol === 'https:' && /^http:\/\//i.test(real)) return cb.error('This stream is plain http, which a browser blocks on an https page. Use the Tizen or Android app, or an https stream.');
       backend = hasAv() ? avBackend() : htmlBackend();
       applyRect();
       try { backend.open(real, E.rect || FULL, E.startAt || 0, cb, E.isLive()); } catch (e) { cb.error('The player could not open this stream'); }

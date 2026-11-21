@@ -1,0 +1,7 @@
+# Cloudflare Pages project. The site is static (public/, built by tools/build-web.sh); functions/ holds the /proxy function.
+name = "streamhaven"
+pages_build_output_dir = "public"
+compatibility_date = "2025-01-01"
+
+# [vars]
+# PROXY_ALLOW = "provider.example.com,media.example.org"   # optional: limit the proxy to these hosts

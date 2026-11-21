@@ -1,4 +1,4 @@
-/* Built-in providers: M3U, direct URL, XMLTV-only guide, demo library. */
+/* Built-in providers: M3U, direct URL, XMLTV-only guide. */
 (function () {
   'use strict';
   var SH = window.SH, P = SH.Providers;
@@ -52,5 +52,4 @@
     }
   };
 
-  P.demo = { sync: function (s, cb) { setTimeout(function () { cb(null, SH.Demo.build()); }, 0); } };
 })();

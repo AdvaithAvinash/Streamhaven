@@ -18,7 +18,7 @@
 
   function progBlock(ch) {
     var p = SH.Epg.now(ch), n = SH.Epg.next(ch);
-    if (!p) return h('div.hero-prog', [h('div.hero-prog-title', { text: 'No programme information for this channel' })]);
+    if (!p) return null;
     return h('div.hero-prog', [
       h('div.hero-prog-title', { text: p.t }),
       h('div.hero-prog-row', [h('span', { text: SH.fmt.range(p.s, p.e) }), UI.progress(SH.Epg.progress(p))]),
@@ -28,20 +28,21 @@
 
   var build = {
     hero: function () {
-      var d = SH.Store.data(), lastCh = d.recent.length ? C.get(d.recent[0]) : null, vod = C.recentlyAdded(null, 6).filter(function (x) { return x.backdrop || x.poster; });
+      var d = SH.Store.data(), lastCh = d.recent.length ? C.get(d.recent[0]) : null, vod = C.recentlyAdded(null, 8).filter(function (x) { return x.backdrop || x.poster; });
+      if (!vod.length) vod = C.recentlyAdded(null, 8);
       var item = lastCh || vod[new Date().getDate() % (vod.length || 1)] || C.channels[0] || C.movies[0] || C.series[0];
       if (!item) return null;
       if (item.kind === 'channel') {
         var p = SH.Epg.now(item);
         return UI.hero({
-          art: null, title: item.name, logo: UI.art(item.logo, item.name, 'logo.hero-logo', true), eyebrow: [UI.live(), h('span', { text: lastCh ? 'Pick up where you left off' : 'Live TV' })],
+          art: null, title: item.name, logo: item.logo ? UI.art(item.logo, item.name, 'logo.hero-logo') : null, eyebrow: [UI.live(), h('span', { text: lastCh ? 'Pick up where you left off' : 'Live TV' })],
           meta: [item.group, C.sourceNames(item).join(', ')], extra: progBlock(item),
           buttons: [UI.button('Watch Now', { primary: true, icon: 'play', auto: true, fid: 'hero-play', run: function () { UI.open(item, C.channels); } }),
-            UI.button('More Information', { icon: 'info', fid: 'hero-info', run: function () { SH.App.programmeInfo(item, p); } })]
+            p ? UI.button('More Information', { icon: 'info', fid: 'hero-info', run: function () { SH.App.programmeInfo(item, p); } }) : null]
         });
       }
       return UI.hero({
-        art: item.backdrop || item.poster, title: item.title, eyebrow: [h('span', { text: (item.kind === 'series' ? 'Series' : 'Movie') + ' · Recently added' })],
+        item: item, title: item.title, eyebrow: [h('span', { text: (item.kind === 'series' ? 'Series' : 'Movie') + ' · Recently added' })],
         meta: [item.year || null, item.genres.slice(0, 3).join(' · '), item.duration ? SH.fmt.dur(item.duration) : null, item.kind === 'series' ? SH.fmt.count(item.seasons.length, 'season') : null], text: item.plot,
         buttons: [UI.button('Watch Now', { primary: true, icon: 'play', auto: true, fid: 'hero-play', run: function () { SH.App.playTitle(item); } }),
           UI.button('More Information', { icon: 'info', fid: 'hero-info', run: function () { SH.Router.push('detail', { id: item.id }); } })]
@@ -84,10 +85,9 @@
       var syncing = C.sources.some(function (s) { return s.status === 'syncing'; });
       page.track.appendChild(h('div.welcome', [
         h('div.welcome-mark', { html: SH.logo(96) }), h('h1', { text: 'Welcome to Streamhaven' }),
-        h('p', { text: syncing ? 'Synchronising your sources…' : (C.sources.length ? 'Your sources have no content yet. Check their status or add another one.' : 'Connect a playlist or stream to build your home screen. Everything you see here comes from your own sources.') }),
+        h('p', { text: syncing ? 'Synchronising your sources…' : (C.sources.length ? 'Your sources have no content yet. Check their status or add another one.' : 'Add a playlist, an Xtream, Stalker, Jellyfin, Emby or Plex source, and your home screen builds itself from it.') }),
         h('div.btn-row', { 'data-nav': 'row' }, [
           UI.button(C.sources.length ? 'Manage sources' : 'Add a source', { primary: true, icon: 'plus', auto: true, fid: 'w-add', run: function () { SH.App.go('sources', C.sources.length ? null : { add: true }); } }),
-          C.sources.length ? null : UI.button('Explore the demo library', { icon: 'discover', fid: 'w-demo', run: function () { C.addSource({ type: 'demo', name: 'Demo library' }); UI.toast('Demo library added. Remove it any time in Sources.'); } })
         ])
       ]));
       return { el: page.el };

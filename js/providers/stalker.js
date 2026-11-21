@@ -1,6 +1,6 @@
 /* Stalker (Ministra) portal provider: live channels, movies (VOD), portal guide.
  * Portals identify the device by a MAC address sent in a Cookie header. Browsers refuse to let a page
- * set Cookie / User-Agent, so this provider only works where SH.hasNativeHttp() is true (Android).
+ * set Cookie / User-Agent, so this provider only works where SH.canSendHeaders() is true (Android bridge, or the web build's /proxy).
  * Series (nested seasons) are not supported. */
 (function () {
   'use strict';
@@ -34,7 +34,7 @@
   function session(c, cb, fresh) {
     var key = c.portal + '|' + c.mac, ses = sessions[key];
     if (ses && !fresh && Date.now() - ses.ts < 600000) return cb(null, ses.token);
-    if (!SH.hasNativeHttp()) return cb('This device cannot send the headers a Stalker portal needs. Stalker portals work in the Android app.');
+    if (!SH.canSendHeaders()) return cb('This device cannot send the headers a Stalker portal needs. Stalker portals work in the Android app and in the web build served from Cloudflare Pages.');
     load(c, '', 'type=stb&action=handshake&token=', function (err, js) {
       if (err) return cb(err);
       var token = js && js.token;

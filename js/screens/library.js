@@ -43,7 +43,7 @@
         var page = UI.page({ noHead: true }), feat = C.recentlyAdded(kind, 5)[new Date().getDate() % Math.min(5, all.length)];
         page.view.className = 'page-view lib-page';
         SH.add(page.track, [
-          UI.hero({ compact: true, art: feat.backdrop || feat.poster, title: feat.title, eyebrow: [h('span', { text: 'Recently added' })], meta: [feat.year || null, feat.genres.slice(0, 3).join(' · '), feat.duration ? SH.fmt.dur(feat.duration) : null], text: feat.plot,
+          UI.hero({ compact: true, item: feat, title: feat.title, eyebrow: [h('span', { text: 'Recently added' })], meta: [feat.year || null, feat.genres.slice(0, 3).join(' · '), feat.duration ? SH.fmt.dur(feat.duration) : null], text: feat.plot,
             buttons: [UI.button('Watch Now', { primary: true, icon: 'play', fid: 'lf-play', run: function () { SH.App.playTitle(feat); } }), UI.button('More Information', { icon: 'info', fid: 'lf-info', run: function () { SH.Router.push('detail', { id: feat.id }); } })] }),
           UI.rail('Recently Added', C.recentlyAdded(kind, 20).map(UI.posterCard)),
           UI.rail('Top Rated in Your Library', C.topRated(kind, 20).map(UI.posterCard)),

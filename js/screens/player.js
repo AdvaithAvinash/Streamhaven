@@ -44,10 +44,10 @@
         SH.add(bar, [
           prev ? h('div.p-neighbour', [h('span', { html: SH.icon('up', 20) }), h('span.ch-num', { text: prev.num }), h('span', { text: prev.name })]) : null,
           h('div.p-main', [
-            UI.art(item.logo, item.name, 'logo', true),
+            UI.logo(item, false),
             h('div.p-info', [
               h('div.p-ch', [h('span.ch-num', { text: item.num }), h('span.p-ch-name', { text: item.name }), UI.live(), SH.Store.get('showHealth') ? UI.health(item, E.streamIndex) : null]),
-              h('div.p-title', { text: p ? p.t : 'No programme information' }),
+              p ? h('div.p-title', { text: p.t }) : null,
               p ? h('div.p-row', [h('span', { text: SH.fmt.range(p.s, p.e) }), UI.progress(SH.Epg.progress(p))]) : null,
               n ? h('div.p-next', { text: 'Next · ' + SH.fmt.time(n.s) + '  ' + n.t }) : null
             ]),
@@ -126,6 +126,8 @@
         if (key === 'stop') { SH.Router.back(); return true; }
         if (key === 'playpause' || key === 'play' || key === 'pause') { if (!live()) E.toggle(); show(); return true; }
         if (key === 'chup' || key === 'chdown') { if (live()) switchTo(key === 'chup' ? 1 : -1); return true; }
+        if (live() && /^\d$/.test(key)) { UI.zap.key(key, function (n) { var ch = C.channels[n - 1]; if (!ch) return UI.toast('There is no channel ' + n); if (idx() < 0 && list !== C.channels) { list = C.channels; } item = ch; if (idx() < 0) list = C.channels; E.play(item, { rect: null }); draw(); show(); }); return true; }
+        if (live() && key === 'enter' && UI.zap.active()) { UI.zap.flush(); return true; }
         if (live() && (key === 'up' || key === 'down')) { switchTo(key === 'up' ? -1 : 1); return true; }
         if (!live() && (key === 'ff' || key === 'rw')) { E.seekBy(key === 'ff' ? 30 : -30); show(); return true; }
         if (!live() && (key === 'left' || key === 'right') && (!visible || SH.Focus.current === seekEl)) { E.seekBy(key === 'right' ? 10 : -10); show(); if (seekEl) SH.Focus.set(seekEl); drawTime(); return true; }

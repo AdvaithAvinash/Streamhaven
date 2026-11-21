@@ -10,6 +10,7 @@
     var filter = { mode: 'all' }, channels = C.channels, row = 0, top = 0, subs = [];
     var winStart = floor30(Date.now()) - 2 * M30, winEnd = winStart + (SH.Store.get('guideSpan') || 24) * 3600000;
     var cursor = Date.now(), t0 = floor30(cursor) - M30, focusCell = null;
+    var anyLogo = channels.some(function (c) { return !!c.logo; });
     var info = h('div.guide-info'), ruler = h('div.guide-ruler'), rowsEl = h('div.guide-rows'), nowLine = h('div.guide-now');
     var grid = h('div.guide-grid', [ruler, rowsEl, nowLine]);
     var filterChip = h('span');
@@ -24,7 +25,7 @@
           var opts = [{ label: 'All channels', value: 'all' }, { label: 'Favourites', value: 'fav' }].concat(C.groups.map(function (g) { return { label: g.name, value: 'g:' + g.name, note: String(g.count) }; }));
           UI.picker({ title: 'Show channels', options: opts, value: filter.mode === 'group' ? 'g:' + filter.value : filter.mode, onPick: function (v, op) {
             filter = v.indexOf('g:') === 0 ? { mode: 'group', value: v.slice(2), label: op.label } : { mode: v, label: v === 'all' ? '' : op.label };
-            channels = C.channelsBy(filter); row = 0; top = 0; drawActions(); render();
+            channels = C.channelsBy(filter); anyLogo = channels.some(function (c) { return !!c.logo; }); row = 0; top = 0; drawActions(); render();
             var c = actions.querySelector('[data-fid="g-filter"]'); if (c) SH.Focus.set(c);
           } });
         } }),
@@ -39,10 +40,10 @@
     }
     function cell(ch, p, r, left, width) {
       var now = Date.now(), cls = 'div.g-cell.f';
-      if (p) { if (p.s <= now && p.e > now) cls += '.airing'; else if (p.e <= now) cls += '.past'; if (SH.Store.hasReminder(ch.id, p.s)) cls += '.reminded'; } else cls += '.none';
-      return h(cls, { style: 'left:' + left + 'px;width:' + Math.max(8, width - 4) + 'px', _enter: function () { SH.App.programmeInfo(ch, p); },
+      if (p) { if (p.s <= now && p.e > now) cls += '.airing'; else if (p.e <= now) cls += '.past'; if (SH.Store.hasReminder(ch.id, p.s)) cls += '.reminded'; } else cls += '.airing';
+      return h(cls, { style: 'left:' + left + 'px;width:' + Math.max(8, width - 4) + 'px', _enter: function () { if (p) SH.App.programmeInfo(ch, p); else SH.Router.push('player', { item: ch, list: channels }); },
         _focus: function () { if (r !== row || (p && (cursor < p.s || cursor >= p.e))) { row = r; if (p) cursor = Math.max(p.s, t0); drawInfo(); } } }, [
-        h('div.g-title', [p && SH.Store.hasReminder(ch.id, p.s) ? h('span.g-bell', { html: SH.icon('bell', 18) }) : null, p ? p.t : 'No programme information']),
+        h('div.g-title', [p && SH.Store.hasReminder(ch.id, p.s) ? h('span.g-bell', { html: SH.icon('bell', 18) }) : null, p ? p.t : 'Watch live']),
         p && width > 150 ? h('div.g-time', { text: SH.fmt.range(p.s, p.e) }) : null
       ]);
     }
@@ -61,7 +62,7 @@
           if (r === row && cursor >= p.s && cursor < p.e) focusCell = c;
         }
         if (r === row && !focusCell) focusCell = first;
-        rowsEl.appendChild(h('div.g-row' + (r === row ? '.current' : ''), [h('div.g-ch', [h('span.ch-num', { text: ch.num }), UI.art(ch.logo, ch.name, 'logo', true), h('span.g-ch-name', { text: ch.name })]), lane]));
+        rowsEl.appendChild(h('div.g-row' + (r === row ? '.current' : ''), [h('div.g-ch', [h('span.ch-num', { text: ch.num }), UI.logo(ch, anyLogo), h('span.g-ch-name', { text: ch.name })]), lane]));
       }
       if (!channels.length) rowsEl.appendChild(UI.empty('guide', C.channels.length ? 'No channels in this view' : 'No channels yet', C.channels.length ? 'Choose a different filter.' : 'Add a source with live channels to see the guide.',
         C.channels.length ? null : [UI.button('Add a source', { primary: true, run: function () { SH.App.go('sources'); } })]));
@@ -79,8 +80,8 @@
       SH.add(info, [
         h('div.gi-main', [
           h('div.gi-title', { text: p ? p.t : ch.name }),
-          h('div.meta', [p ? h('span', { text: SH.fmt.day(p.s) + ' · ' + SH.fmt.range(p.s, p.e) }) : null, h('span', { text: ch.name }), p && p.c ? h('span', { text: p.c }) : null, p && p.s <= now && p.e > now ? UI.live() : null]),
-          h('p.gi-desc', { text: p ? (p.d || 'No description available.') : 'This source does not provide programme information for this channel.' })
+          h('div.meta', [p ? h('span', { text: SH.fmt.day(p.s) + ' · ' + SH.fmt.range(p.s, p.e) }) : null, p ? h('span', { text: ch.name }) : null, p && p.c ? h('span', { text: p.c }) : null, !p || (p.s <= now && p.e > now) ? UI.live() : null]),
+          p && p.d ? h('p.gi-desc', { text: p.d }) : null
         ]),
         h('div.gi-hint', { text: p && p.s > now ? 'Press OK to set a reminder' : 'Press OK to watch' })
       ]);
