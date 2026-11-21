@@ -1,63 +1,41 @@
 /* Live sports from the Matchora public API (https://matchora.to).
- *   GET /api/v1/live            live matches and current minute
- *   GET /api/v1/schedule        fixtures (?date=YYYY-MM-DD, ?watchable=1, ?live=1)
- *   GET /api/v1/events/{id}     match details and channels
- *   GET /api/v1/channels        indexed channels
- * The API exposes no stream URLs: playback is Matchora's own embed (iframe, with advertising).
- * Because the response shape is not documented here, ALL field mapping lives in normalize() below. */
+ *   GET /api/v1/live               {count, events: [event]}
+ *   GET /api/v1/schedule           {count, events: [event]}   ?date=YYYY-MM-DD  ?watchable=1  ?live=1
+ *   GET /api/v1/events/{id}        event (no wrapper)         HTTP 502 {"error": "...unknown fixture"} when the id is not listed
+ * event: {id (string), home, away ("" for single-title events), league, sport, watching, home_badge, away_badge,
+ *         league_badge, kickoff (unix seconds), status ("LIVE" "1H" "NS" "FT" ""), minute ("28" | null), score ("0-0" | null),
+ *         live, finished, channel_count, channels: [channel], page_url, embed_url}
+ * channel: {id (string), name, country (flag emoji), quality, lang, watching, playing, dead, embed_url}
+ * Shapes verified against live responses on 2026-11-21 (see tools/fixtures/matchora).
+ * The API exposes no stream addresses: playback is Matchora's own embed (iframe, with advertising). */
 (function () {
   'use strict';
   var SH = window.SH;
-  var BASE = 'https://matchora.to';
   var cache = {};
+  var EMBED_HOST = /(^|\.)matchora\.(pro|to)$/i;
 
-  function pick(o, keys) { for (var i = 0; i < keys.length; i++) { var v = o[keys[i]]; if (v !== undefined && v !== null && v !== '') return v; } return undefined; }
-  function str(v) { if (v === undefined || v === null) return ''; if (typeof v === 'object') return str(pick(v, ['name', 'title', 'short_name', 'shortName', 'label'])); return String(v); }
-  function toMs(v) {
-    if (v === undefined || v === null || v === '') return 0;
-    if (typeof v === 'number' || /^\d+$/.test(String(v))) { var n = +v; return n < 1e11 ? n * 1000 : n; }       // seconds or milliseconds
-    var s = String(v).replace(/^\s+|\s+$/g, ''), m = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?(?:\.\d+)?\s*(Z|[+-]\d{2}:?\d{2})?$/.exec(s);
-    if (!m) { var t = Date.parse(s); return isNaN(t) ? 0 : t; }
-    var ms = Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +(m[6] || 0));         // no zone given: treated as UTC
-    if (m[7] && m[7] !== 'Z') { var z = /([+-])(\d{2}):?(\d{2})/.exec(m[7]); ms -= (z[1] === '-' ? -1 : 1) * (+z[2] * 60 + +z[3]) * 60000; }
-    return ms;
-  }
-  function list(j) {
-    if (j instanceof Array) return j;
-    if (!j || typeof j !== 'object') return [];
-    var keys = ['data', 'matches', 'events', 'results', 'items', 'schedule', 'live', 'channels', 'fixtures'], i, k;
-    for (i = 0; i < keys.length; i++) { k = j[keys[i]]; if (k instanceof Array) return k; if (k && typeof k === 'object') { var inner = list(k); if (inner.length) return inner; } }
-    var out = [];                                  // grouped by date or league: { "2026-11-21": [...] }
-    for (k in j) if (j.hasOwnProperty(k) && j[k] instanceof Array) out = out.concat(j[k]);
-    return out;
-  }
-  function normChannel(c) {
-    if (c === null || c === undefined) return null;
-    if (typeof c !== 'object') return { id: String(c), name: 'Channel ' + c };
-    var id = pick(c, ['id', 'channel_id', 'channelId', 'slug']);
-    return id === undefined ? null : { id: String(id), name: str(pick(c, ['name', 'title', 'channel', 'channel_name'])) || 'Channel ' + id, logo: str(pick(c, ['logo', 'icon', 'image'])), lang: str(pick(c, ['language', 'lang', 'country'])) };
+  function s(v) { return v === undefined || v === null ? '' : String(v); }
+
+  /* Only ever load Matchora's own pages in the embedded frame, whatever the API says. */
+  function safeEmbed(url, fallback) { return url && /^https:\/\//i.test(url) && EMBED_HOST.test(SH.hostOf(url)) ? url : fallback; }
+
+  function normChannel(c, base) {
+    if (!c || typeof c !== 'object' || c.id === undefined || c.id === null) return null;
+    return { id: s(c.id), name: s(c.name) || 'Channel ' + c.id, lang: s(c.lang), quality: s(c.quality), watching: +c.watching || 0, playing: c.playing === true, dead: c.dead === true,
+      embedUrl: safeEmbed(c.embed_url, base + '/embed/channel/' + encodeURIComponent(c.id)) };
   }
   function normalize(o) {
-    if (!o || typeof o !== 'object') return null;
-    var id = pick(o, ['id', 'event_id', 'eventId', 'match_id', 'matchId']);
-    if (id === undefined) return null;
-    var home = str(pick(o, ['home', 'home_team', 'homeTeam', 'team1', 'team_home'])), away = str(pick(o, ['away', 'away_team', 'awayTeam', 'team2', 'team_away']));
-    var title = str(pick(o, ['title', 'name', 'match', 'event'])) || (home && away ? home + ' vs ' + away : 'Match ' + id);
-    if (!home && !away) { var p = title.split(/\s+(?:vs\.?|v|-|–)\s+/i); if (p.length === 2) { home = p[0]; away = p[1]; } }
-    var rawStatus = str(pick(o, ['status', 'state', 'match_status', 'phase'])).toLowerCase(), liveFlag = pick(o, ['is_live', 'isLive', 'live']);
-    var status = (liveFlag === true || liveFlag === 1 || liveFlag === '1' || /^(live|inplay|in_play|in-play|playing|1h|2h|ht|et|started)/.test(rawStatus)) ? 'live'
-      : (/^(ft|finished|ended|full|final|complete|after)/.test(rawStatus) ? 'finished' : 'upcoming');
-    var minute = pick(o, ['minute', 'current_minute', 'currentMinute', 'elapsed', 'time_elapsed', 'match_minute']);
-    var hs = pick(o, ['home_score', 'homeScore', 'score_home']), as = pick(o, ['away_score', 'awayScore', 'score_away']), sc = pick(o, ['score', 'result']), score = '';
-    if (hs !== undefined && as !== undefined) score = hs + ' – ' + as;
-    else if (sc && typeof sc === 'object') { var a = pick(sc, ['home', 'h']), b = pick(sc, ['away', 'a']); if (a !== undefined && b !== undefined) score = a + ' – ' + b; }
-    else if (sc) score = String(sc).replace(/\s*[-:]\s*/, ' – ');
-    var chRaw = pick(o, ['channels', 'streams', 'sources']), channels = (chRaw instanceof Array ? chRaw : []).map(normChannel).filter(Boolean);
-    var count = pick(o, ['channel_count', 'channelCount', 'channels_count']);
-    var wat = pick(o, ['watchable', 'has_channels', 'hasChannels']);
-    return { id: String(id), title: title, home: home, away: away, league: str(pick(o, ['league', 'competition', 'tournament', 'league_name', 'category'])), country: str(pick(o, ['country', 'region'])),
-      start: toMs(pick(o, ['start', 'start_time', 'startTime', 'kickoff', 'kick_off', 'starts_at', 'date', 'time', 'timestamp'])), status: status, rawStatus: rawStatus, minute: minute === undefined ? '' : String(minute).replace(/'+$/, ''),
-      score: score, channels: channels, channelCount: channels.length || (count !== undefined ? +count || 0 : 0), watchable: wat === undefined ? (channels.length > 0 || (+count || 0) > 0) : !!wat && wat !== '0' };
+    if (!o || typeof o !== 'object' || o.id === undefined || o.id === null) return null;
+    var base = SH.Sports.base, id = s(o.id), home = s(o.home), away = s(o.away), raw = s(o.status).toUpperCase();
+    var status = o.live === true || /^(LIVE|1H|2H|HT|ET|BT|P|INT)$/.test(raw) ? 'live' : (o.finished === true || /^(FT|AET|PEN)$/.test(raw) ? 'finished' : 'upcoming');
+    var channels = (o.channels instanceof Array ? o.channels : []).map(function (c) { return normChannel(c, base); }).filter(function (c) { return c && !c.dead; });
+    channels.sort(function (a, b) { return (b.playing ? 1 : 0) - (a.playing ? 1 : 0) || b.watching - a.watching; });
+    var m = /^\s*(\d+)\s*[-:]\s*(\d+)\s*$/.exec(s(o.score));
+    return { id: id, home: home, away: away, title: home && away ? home + ' vs ' + away : (home || away || 'Match ' + id), league: s(o.league), sport: s(o.sport),
+      start: (+o.kickoff || 0) < 1e11 ? (+o.kickoff || 0) * 1000 : +o.kickoff, status: status, rawStatus: raw, minute: s(o.minute).replace(/'+$/, ''),
+      score: m ? m[1] + ' – ' + m[2] : '', watching: +o.watching || 0, homeBadge: s(o.home_badge), awayBadge: s(o.away_badge),
+      channels: channels, channelCount: channels.length,
+      embedUrl: safeEmbed(o.embed_url, base + '/embed/match/' + encodeURIComponent(id)) };
   }
 
   function get(path, ttl, cb, fresh) {
@@ -65,8 +43,10 @@
     if (hit && !fresh && Date.now() - hit.t < ttl) return cb(null, hit.v);
     SH.getJson(SH.Sports.base + path, { timeout: 20000 }, function (err, j, info) {
       if (err) {
-        if (info && info.status === 429) err = 'Matchora is limiting requests from this connection. Try again in a minute.';
-        else if (info && info.status >= 500) err = 'Matchora is having problems right now (' + info.status + ').';
+        var st = info && info.status;
+        if (st === 429) err = 'Matchora is limiting requests from this connection. Try again in a minute.';
+        else if (/\/events\//.test(path) && (st === 502 || st === 404)) err = 'Matchora no longer lists this match.';
+        else if (st >= 500) err = 'Matchora is having problems right now (' + st + ').';
         return cb(hit && !fresh ? null : err, hit && hit.v);        // stale data beats an error screen, except when the user asked for a refresh
       }
       cache[path] = { t: Date.now(), v: j }; cb(null, j);
@@ -75,31 +55,30 @@
   function dayStr(d) { return d.getFullYear() + '-' + SH.pad2(d.getMonth() + 1) + '-' + SH.pad2(d.getDate()); }
 
   SH.Sports = {
-    base: BASE, normalize: normalize, list: list, dayStr: dayStr,
-    /* mode: 'live' | 'date'; opts: {date: 'YYYY-MM-DD', watchable: bool} */
+    base: 'https://matchora.to', normalize: normalize, dayStr: dayStr,
+    /* opts: {mode: 'live' | 'date', date: 'YYYY-MM-DD', watchable: bool, fresh: bool} */
     matches: function (opts, cb) {
       var path = opts.mode === 'live' ? '/api/v1/live' : '/api/v1/schedule?date=' + encodeURIComponent(opts.date) + (opts.watchable ? '&watchable=1' : '');
       get(path, opts.mode === 'live' ? 45000 : 300000, function (err, j) {
         if (err) return cb(err);
-        var arr = list(j), out = [];
+        var arr = j && j.events;
+        if (!(arr instanceof Array)) return cb('Matchora answered in a format Streamhaven does not recognise.');
+        var out = [];
         arr.forEach(function (o) { var m = normalize(o); if (m) out.push(m); });
-        if (!out.length && arr.length) return cb('Matchora answered in a format Streamhaven does not recognise yet.');
-        if (opts.mode === 'live') out = out.filter(function (m) { return m.status === 'live'; }).concat(out.filter(function (m) { return m.status !== 'live'; }));
-        else if (opts.watchable) out = out.filter(function (m) { return m.watchable; });
-        out.sort(function (a, b) { return (a.status === 'live' ? 0 : 1) - (b.status === 'live' ? 0 : 1) || a.start - b.start; });
+        if (opts.mode !== 'live' && opts.watchable) out = out.filter(function (m) { return m.channelCount > 0; });
+        var rank = { live: 0, upcoming: 1, finished: 2 };
+        out.sort(function (a, b) { return rank[a.status] - rank[b.status] || (a.status === 'finished' ? b.start - a.start : a.start - b.start) || b.watching - a.watching; });
         cb(null, out);
       }, opts.fresh);
     },
+    /* Fresh channel list for one match (list responses already carry channels; this only refreshes them). */
     event: function (id, cb) {
       get('/api/v1/events/' + encodeURIComponent(id), 120000, function (err, j) {
         if (err) return cb(err);
-        var o = j && !(j instanceof Array) && typeof j === 'object' ? (j.data && typeof j.data === 'object' && !(j.data instanceof Array) ? j.data : (j.event && typeof j.event === 'object' ? j.event : (j.match && typeof j.match === 'object' ? j.match : j))) : null;
-        var m = normalize(o); if (!m) return cb('Matchora answered in a format Streamhaven does not recognise yet.');
+        var m = normalize(j); if (!m) return cb('Matchora answered in a format Streamhaven does not recognise.');
         cb(null, m);
       });
     },
-    embedMatch: function (id) { return SH.Sports.base + '/embed/match/' + encodeURIComponent(id); },
-    embedChannel: function (id) { return SH.Sports.base + '/embed/channel/' + encodeURIComponent(id); },
 
     /* The same channel in the user's own sources (ad-free, uses the normal player). */
     local: function (name) {

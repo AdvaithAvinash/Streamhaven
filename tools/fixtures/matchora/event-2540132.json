@@ -1,0 +1,66 @@
+{
+  "id": "2540132",
+  "home": "Central Coast Mariners",
+  "away": "Perth Glory",
+  "league": "Australian A-League",
+  "sport": "Soccer",
+  "watching": 8,
+  "home_badge": "https://matchora.pro/img?k=Tv63pyI9tra3wz7uybaT1fjmBaONvYsFZa3yiXSdKK18EeOMq7gQYkLO8v7kLGEVMXsb1F_b52nonhz3FJicpgT52LRG_SQC0PVZJwT2I4-XB_4F09YDQ0bDboi6GsmRql79",
+  "away_badge": "https://matchora.pro/img?k=KL2oLv6eECPoaxUaUWFyH1cRkr3ZVPjsoCRDEJYlIH274io3V-JOsfnkAbbSoiX5ZYCPI3A8CO9vc2V27aLvfIdAR6PAFrfkAxElxbSl1nFJgcky89ah7R0iexEK7MIH7sDU",
+  "league_badge": "https://matchora.pro/img?k=zZ8QpS2L4XHubVG38ErH6JOaebdX4gtsffZZnE8nuI3q6yV0HHcGSkGuWvNF89U6cSMAnUVUivln982qVv2XTYczGQjnlWrNfsODiP7oQvXJbheJ84skV6m3EiidLkpJN7V6Vtk",
+  "kickoff": 1795240800,
+  "status": "1H",
+  "minute": "28",
+  "score": "0-0",
+  "live": true,
+  "finished": false,
+  "channel_count": 4,
+  "channels": [
+    {
+      "id": "1949622",
+      "name": "Espn+ USA",
+      "country": "🇺🇸",
+      "quality": "",
+      "lang": "English",
+      "watching": 7,
+      "playing": true,
+      "dead": false,
+      "embed_url": "https://matchora.pro/embed/channel/1949622"
+    },
+    {
+      "id": "30567",
+      "name": "TNT SPORTS 1",
+      "country": "🇬🇧",
+      "quality": "SD",
+      "lang": "English",
+      "watching": 1,
+      "playing": true,
+      "dead": false,
+      "embed_url": "https://matchora.pro/embed/channel/30567"
+    },
+    {
+      "id": "1596279",
+      "name": "TNT SPORTS | Event 7",
+      "country": "🇬🇧",
+      "quality": "",
+      "lang": "English",
+      "watching": 0,
+      "playing": false,
+      "dead": false,
+      "embed_url": "https://matchora.pro/embed/channel/1596279"
+    },
+    {
+      "id": "2047094",
+      "name": "Max UK",
+      "country": "🇬🇧",
+      "quality": "",
+      "lang": "English",
+      "watching": 0,
+      "playing": false,
+      "dead": false,
+      "embed_url": "https://matchora.pro/embed/channel/2047094"
+    }
+  ],
+  "page_url": "https://matchora.pro/match/central-coast-mariners-vs-perth-glory-2540132",
+  "embed_url": "https://matchora.pro/embed/match/2540132"
+}

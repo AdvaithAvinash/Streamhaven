@@ -190,7 +190,7 @@ body.video-on .video-hole { box-shadow: 0 0 0 4000px #080D17; }
 .sports-body .empty { margin-left: 400px; }
 .sp-state { margin: 240px 0 0 800px; text-align: center; width: 300px; }
 .sp-state .spinner { margin: 0 auto; }
-.card.match { width: 552px; height: 168px; padding: 18px 22px; background: #172235; border: 1px solid rgba(255,255,255,0.06); }
+.card.match { width: 552px; height: 192px; padding: 18px 22px; background: #172235; border: 1px solid rgba(255,255,255,0.06); }
 .card.match.is-focused { background: #1E2C44; -webkit-transform: none; transform: none; }
 .mc-top { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; margin-bottom: 12px; }
 .mc-league { -webkit-flex: 1; flex: 1; min-width: 0; color: #929EB0; font-size: 19px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -207,3 +207,13 @@ body.video-on .video-hole { box-shadow: 0 0 0 4000px #080D17; }
 .embed-frame { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; border: 0; background: #000; }
 .embed-hint { position: absolute; left: 50%; bottom: 36px; margin-left: -520px; width: 1040px; padding: 12px 22px; text-align: center; border-radius: 10px; background: rgba(16,24,39,0.9); border: 1px solid rgba(255,255,255,0.1); color: #C9D1DE; font-size: 20px; -webkit-transition: opacity .3s; transition: opacity .3s; }
 .embed-hint.gone { opacity: 0; }
+.art.badge { -webkit-flex: none; flex: none; width: 34px; height: 34px; margin-right: 12px; border-radius: 8px; background: transparent !important; }
+.art.badge img { object-fit: contain; }
+.art.badge .art-label { font-size: 16px; padding: 0; }
+.badge-gap { -webkit-flex: none; flex: none; width: 46px; height: 34px; }
+.mc-team.single span { white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-height: 1.25; max-height: 64px; }
+.mc-team { -webkit-align-items: center; align-items: center; margin-bottom: 4px; }
+.mc-foot { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; }
+.mc-watching { margin-left: auto; color: #6F7B8F; font-size: 18px; }
+.sp-menu { max-height: 560px; overflow: hidden; }
+.menu-item .mi-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
