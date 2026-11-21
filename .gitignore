@@ -1,1 +1,4 @@
 dist/*.idsig
+public/
+node_modules/
+.wrangler/

@@ -87,6 +87,19 @@
     return 'Server returned ' + status;
   }
   SH.hasNativeHttp = function () { return !!window.SHNative; };
+  SH.proxy = '';                       // '/proxy' when the Cloudflare Pages function is available (web build)
+  SH.canSendHeaders = function () { return !!window.SHNative || !!SH.proxy; };
+  SH.initProxy = function (cb) {
+    if (window.SHNative || !/^https?:$/.test(location.protocol) || window.SH_PROXY === false) return cb();
+    var x = new XMLHttpRequest(), done = false;
+    function fin(on) { if (done) return; done = true; if (on) SH.proxy = '/proxy'; cb(); }
+    try {
+      x.open('GET', '/proxy?ping', true); x.timeout = 3000;
+      x.onload = function () { var ok = false; try { ok = x.status === 200 && JSON.parse(x.responseText).streamhaven === true; } catch (e) {} fin(ok); };
+      x.onerror = x.ontimeout = function () { fin(false); };
+      x.send();
+    } catch (e) { fin(false); }
+  };
   SH.http = function (url, opts, cb) {
     if (typeof opts === 'function') { cb = opts; opts = {}; }
     opts = opts || {};
@@ -108,14 +121,19 @@
       catch (e) { delete nativePending[id]; fin('Could not reach the server'); }
       return { abort: function () { delete nativePending[id]; done = true; } };
     }
-    var x = new XMLHttpRequest();
+    var x = new XMLHttpRequest(), viaProxy = !!SH.proxy && /^https?:\/\//i.test(url) && url.indexOf(location.origin + '/') !== 0;
     try {
-      x.open(method, url, true);
+      x.open(method, viaProxy ? SH.proxy + '?url=' + encodeURIComponent(url) : url, true);
       x.timeout = timeout;
       if (opts.binary) x.responseType = 'arraybuffer';
       var hd = opts.headers || {};
-      for (var k in hd) if (hd.hasOwnProperty(k) && hd[k] !== undefined) { try { x.setRequestHeader(k, hd[k]); } catch (e1) {} }
-      x.onload = function () { finStatus(x.status, opts.binary ? new Uint8Array(x.response) : x.responseText); };
+      if (viaProxy) { if (Object.keys(hd).length) x.setRequestHeader('X-SH-Headers', encodeURIComponent(JSON.stringify(hd))); }
+      else for (var k in hd) if (hd.hasOwnProperty(k) && hd[k] !== undefined) { try { x.setRequestHeader(k, hd[k]); } catch (e1) {} }
+      x.onload = function () {
+        var pe = viaProxy && x.getResponseHeader('X-SH-Proxy-Error');
+        if (pe) { var msg; try { msg = decodeURIComponent(pe); } catch (e2) { msg = pe; } return fin(msg, null, { status: x.status }); }
+        finStatus(x.status, opts.binary ? new Uint8Array(x.response) : x.responseText);
+      };
       x.onerror = function () { fin('Could not reach the server'); };
       x.ontimeout = function () { fin('The server took too long to respond'); };
       x.send(opts.body || null);

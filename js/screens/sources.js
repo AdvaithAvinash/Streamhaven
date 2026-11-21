@@ -16,7 +16,7 @@
       C.addSource({ type: 'demo', name: 'Demo library' }); UI.toast('Demo library added'); return;
     }
     if (type === 'plex') return plexFlow(null);
-    var note = type === 'stalker' && !SH.hasNativeHttp() ? 'Heads up: Stalker portals need the Android app. This device cannot send the headers they require, so signing in will most likely fail.' : 'Press OK on a field to type.';
+    var note = type === 'stalker' && !SH.canSendHeaders() ? 'Heads up: Stalker portals need the Android app or the Cloudflare Pages web build. This device cannot send the headers they require, so signing in will most likely fail.' : 'Press OK on a field to type.';
     UI.form({ title: 'Add ' + t.label, text: note, submit: 'Add source', async: true, working: 'Checking the connection…', fields: pr.form.fields,
       onSubmit: function (v, done) { pr.form.make(v, null, function (err, res) { if (err) return done(err); created(res, type); done(null); }); } });
   }

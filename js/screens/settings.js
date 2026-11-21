@@ -151,7 +151,7 @@
       action('Reset Streamhaven', '', function () { UI.guard(function () { UI.confirm('Reset Streamhaven?', 'All sources, profiles, history and settings on this TV are erased.', 'Reset', function () { SH.ls.keys('sh.').forEach(SH.ls.del); location.reload(); }, true); }); })
     ]; }],
     ['about', 'About Streamhaven', function () { return [
-      info('Version', SH.version), info('Platform', platform()), info('Playback engine', SH.Engine.engineName()), info('Screen', window.screen.width + ' × ' + window.screen.height),
+      info('Version', SH.version), info('Platform', platform()), info('Playback engine', SH.Engine.engineName()), info('Network', SH.hasNativeHttp() ? 'Native (headers and CORS handled by the app)' : (SH.proxy ? 'Through this site\'s /proxy' : 'Direct from the page')), info('Screen', window.screen.width + ' × ' + window.screen.height),
       info('Source types', 'M3U, Xtream Codes, Stalker, Jellyfin, Emby, Plex, XMLTV, direct URL'), info('Not yet available', 'QR companion setup')
     ]; }]
   ];

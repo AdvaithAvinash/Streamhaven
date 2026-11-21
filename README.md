@@ -21,6 +21,48 @@ A clean, premium IPTV and media app for Samsung Tizen TVs. Dependency-free web a
 
 Nothing has been tried against a real Xtream, Stalker, Jellyfin, Emby or Plex server yet; the clients follow the public protocols and were exercised against mocks written from them.
 
+## Test in a browser: Cloudflare Pages
+
+The web build runs on Cloudflare Pages so you can try the interface, sources, guide and Live Sports without a TV. `tools/build-web.sh` copies only the web app into `public/` (no keystore, packages or Android sources), and `functions/proxy.js` is a Pages Function at `/proxy`.
+
+**Why the proxy.** A page cannot call most IPTV, Jellyfin, Plex or Stalker servers: they send no CORS headers, they are often plain `http` (blocked on an `https` page), and Stalker needs a `Cookie` header that pages may not set. The app detects `/proxy` at start-up and sends its API calls through it. Settings, About, shows "Through this site's /proxy" when it is in use. With no proxy (for example `node tools/dev-server.js`) it talks to servers directly, as before.
+
+### Deploy
+
+Option A, from Git (preview deploys for every branch):
+
+1. Cloudflare dashboard, Workers & Pages, Create, Pages, Connect to Git, choose this repository.
+2. Build command `bash tools/build-web.sh public`, build output directory `public`, root directory left empty.
+3. Deploy. Pushes to `claude/eager-bohr-88pjs4` get their own preview address; Cloudflare finds `functions/` automatically.
+
+Option B, from this machine:
+
+```bash
+bash tools/build-web.sh
+npx wrangler pages deploy public --project-name streamhaven
+```
+
+Run it locally first with `npx wrangler pages dev public`. Add `--binding PROXY_ALLOW_PRIVATE=1` only if you need the proxy to reach a server on your own network; by default private and local addresses are refused.
+
+### What the proxy allows
+
+- Only the app's own page can use it (same origin); other sites and plain `curl` get 403.
+- `http` and `https` only. `localhost`, private ranges, link-local and cloud-metadata addresses, internal names and IPv6 literals are refused.
+- Only these request headers are forwarded: `Cookie`, `User-Agent`, `X-User-Agent`, `Authorization`, `Accept`, `Content-Type`, `X-Emby-*`, `X-Plex-*`.
+- Video and audio responses are refused (415). It relays API calls, playlists and guides, not streams.
+- Optional setting `PROXY_ALLOW` (comma-separated host names) limits it to those hosts.
+
+The proxy is for testing. Anyone who can open your Pages site can use it within these limits, so put the site behind Cloudflare Access if it should stay private. Every provider call is one Function request, and the free plan has a daily request limit.
+
+### What works in the browser
+
+Works: navigation with the keyboard (arrows, Enter, Esc, PageUp/PageDown), sources of every type including Stalker (through the proxy), guide, search, My List, profiles, Live Sports and its embedded player.
+
+Limits:
+- **Playback.** A plain `http` stream cannot play on an `https` page; the player says so. `https` streams play if the browser supports their format; HLS in browsers without native support goes through hls.js, which also needs CORS on the stream host. Use the Tizen or Android app for real viewing.
+- **AVPlay** and the Samsung remote keys exist only on a TV.
+- Tested here with the local Pages runtime (`wrangler pages dev`) against mock servers; not yet deployed to Cloudflare. Outbound connections to unusual server ports from a deployed Function have not been tried.
+
 ### Live Sports (Matchora)
 
 The Live Sports section uses the public Matchora API at `https://matchora.to` (`/api/v1/live`, `/schedule`, `/events/{id}`).
@@ -71,7 +113,8 @@ js/core/    util (DOM builder, bus, storage) · store (settings, profiles) · ke
 js/data/    m3u parser · epg store · health · demo library · catalog (sources, sync, merge, search)
 js/providers/ xmltv · basic (m3u, direct, xmltv, demo) · xtream · stalker · mediaserver (Jellyfin, Emby) · plex
 android/    WebView wrapper (manifest, Java HTTP bridge, icons)
-tools/      dev server, packaging scripts
+functions/  Cloudflare Pages Function (/proxy)
+tools/      dev server, packaging and web build scripts
 js/player/  engine (AVPlay / HTML5 backends, state machine, watchdogs)
 js/ui/      icons · ui (cards, rails, hero, dialogs, forms) · vgrid (virtual list/grid) · sidebar
 js/screens/ one file per screen
